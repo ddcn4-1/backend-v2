@@ -1,15 +1,12 @@
 package org.ddcn41.ticketing_system.admin.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.admin.dto.AuthLogDto;
 import org.ddcn41.ticketing_system.admin.dto.DashboardDto;
 import org.ddcn41.ticketing_system.auth.service.AuthAuditService;
-import org.springframework.boot.actuate.audit.AuditEvent;
+import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,24 +16,10 @@ public class AdminService {
 
     // 대시보드에 나타낼 값 가져오기
     public DashboardDto getDashboardData() {
-        List<AuthLogDto> recentAuthLogs = authAuditService.getRecentAuthEvents(10)
-                .stream()
-                .map(this::convertToAuthLogDto)
-                .collect(Collectors.toList());
+        List<AuditLogDto> recentAuthLogs = authAuditService.getRecentAuthEvents(10);
 
         return DashboardDto.builder()
                 .recentAuthLogs(recentAuthLogs)
-                .build();
-    }
-
-    private AuthLogDto convertToAuthLogDto(AuditEvent auditEvent) {
-        Map<String, Object> data = auditEvent.getData();
-
-        return AuthLogDto.builder()
-                .username(auditEvent.getPrincipal())
-                .action(auditEvent.getType())
-                .timestamp(auditEvent.getTimestamp())
-                .details(data.get("details").toString())
                 .build();
     }
 }

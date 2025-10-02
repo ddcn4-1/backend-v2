@@ -1,55 +1,69 @@
 package org.ddcn41.ticketing_system.auth.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.auth.AuditEventBuilder;
-import org.springframework.boot.actuate.audit.AuditEvent;
-import org.springframework.boot.actuate.audit.AuditEventRepository;
+import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;
+import org.ddcn41.ticketing_system.metric.service.AuditEventService;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AuthAuditService {
-    private final AuditEventRepository auditEventRepository;
+
+    private final AuditEventService auditEventService;
 
     // 로그인 성공 로그
     public void logLoginSuccess(String username) {
-        AuditEvent auditEvent = AuditEventBuilder.builder()
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("details", "Successful login");
+
+        AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
                 .type("LOGIN_SUCCESS")
-                .details("Successful login")
+                .data(data)
                 .build();
 
-        auditEventRepository.add(auditEvent);
+        auditEventService.addAuditEvent(auditLogDto);
     }
 
     // 로그인 실패 로그
     public void logLoginFailure(String username, String errorMessage) {
-        AuditEvent auditEvent = AuditEventBuilder.builder()
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("details", "Login failed: " + errorMessage);
+
+        AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
                 .type("LOGIN_FAILURE")
-                .details("Login failed: " + errorMessage)
+                .data(data)
                 .build();
 
-        auditEventRepository.add(auditEvent);
+        auditEventService.addAuditEvent(auditLogDto);
     }
 
     // 로그아웃 로그
     public void logLogout(String username) {
-        AuditEvent auditEvent = AuditEventBuilder.builder()
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("details", "User logged out");
+
+        AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
                 .type("LOGOUT")
-                .details("User logged out")
+                .data(data)
                 .build();
 
-        auditEventRepository.add(auditEvent);
+        auditEventService.addAuditEvent(auditLogDto);
     }
 
     // 로그인, 로그아웃 관련 이벤트 전체 조회
-    public List<AuditEvent> getAllAuthEvents() {
-        return auditEventRepository.find(null, null, null)
+    public List<AuditLogDto> getAllAuthEvents() {
+        return auditEventService.getAllAuditEvents()
                 .stream()
                 .filter(event -> {
                     String type = event.getType();
@@ -61,7 +75,7 @@ public class AuthAuditService {
     }
 
     // 최근 활동 조회
-    public List<AuditEvent> getRecentAuthEvents(int limit) {
+    public List<AuditLogDto> getRecentAuthEvents(int limit) {
         return getAllAuthEvents().stream()
                 .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
                 .limit(limit)

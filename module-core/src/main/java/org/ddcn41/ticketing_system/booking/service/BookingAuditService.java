@@ -1,14 +1,16 @@
 package org.ddcn41.ticketing_system.booking.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.auth.AuditEventBuilder;
 import org.ddcn41.ticketing_system.booking.entity.Booking;
+import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;
+import org.ddcn41.ticketing_system.metric.service.AuditEventService;
 import org.ddcn41.ticketing_system.user.entity.User;
-import org.springframework.boot.actuate.audit.AuditEventRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -16,33 +18,41 @@ public class BookingAuditService {
 
     private static final String SYSTEM_PRINCIPAL = "system";
 
-    private final AuditEventRepository auditEventRepository;
+    private final AuditEventService auditEventService;
 
     public void logBookingCreated(User user, Booking booking, List<Long> seatIds) {
-        auditEventRepository.add(
-                AuditEventBuilder.builder()
-                        .principal(resolvePrincipal(user))
-                        .type("BOOKING_CREATED")
-                        .data("bookingId", booking.getBookingId())
-                        .data("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null)
-                        .data("seatCount", booking.getSeatCount())
-                        .data("totalAmount", toPlainAmount(booking.getTotalAmount()))
-                        .data("seatIds", seatIds)
-                        .build()
-        );
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("bookingId", booking.getBookingId());
+        data.put("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null);
+        data.put("seatCount", booking.getSeatCount());
+        data.put("totalAmount", toPlainAmount(booking.getTotalAmount()));
+        data.put("seatIds", seatIds);
+
+        AuditLogDto auditLogDto = AuditLogDto.builder()
+                .principal(resolvePrincipal(user))
+                .type("BOOKING_CREATED")
+                .data(data)
+                .build();
+
+        auditEventService.addAuditEvent(auditLogDto);
     }
 
     public void logBookingCancelled(String actorUsername, Booking booking, String reason) {
-        auditEventRepository.add(
-                AuditEventBuilder.builder()
-                        .principal(actorUsername != null ? actorUsername : resolvePrincipal(booking.getUser()))
-                        .type("BOOKING_CANCELLED")
-                        .data("bookingId", booking.getBookingId())
-                        .data("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null)
-                        .data("refundAmount", toPlainAmount(booking.getTotalAmount()))
-                        .data("reason", reason)
-                        .build()
-        );
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("bookingId", booking.getBookingId());
+        data.put("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null);
+        data.put("refundAmount", toPlainAmount(booking.getTotalAmount()));
+        data.put("reason", reason);
+
+        AuditLogDto auditLogDto = AuditLogDto.builder()
+                .principal(actorUsername != null ? actorUsername : resolvePrincipal(booking.getUser()))
+                .type("BOOKING_CANCELLED")
+                .data(data)
+                .build();
+
+        auditEventService.addAuditEvent(auditLogDto);
     }
 
     private String resolvePrincipal(User user) {

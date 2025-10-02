@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;
 
 import java.util.List;
 
@@ -12,5 +13,5 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class DashboardDto {
-    private List<AuthLogDto> recentAuthLogs;
+    private List<AuditLogDto> recentAuthLogs;
 }

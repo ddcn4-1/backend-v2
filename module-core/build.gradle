@@ -1,6 +1,7 @@
 dependencies {
     implementation project(':module-common')
     implementation project(':module-auth')
+    implementation project(':module-metric')
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
