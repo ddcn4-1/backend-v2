@@ -1,7 +1,7 @@
 
 
 dependencies {
-
+    implementation project(':module-auth')
 }
 
 test {
