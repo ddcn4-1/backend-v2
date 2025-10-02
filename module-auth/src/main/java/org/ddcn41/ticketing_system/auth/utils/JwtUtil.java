@@ -1,9 +1,10 @@
-package org.ddcn41.ticketing_system.auth;
+package org.ddcn41.ticketing_system.auth.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.ddcn41.ticketing_system.common.service.JwtTokenValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +12,7 @@ import java.security.Key;
 import java.util.Date;
 
 @Component
-public class JwtUtil {
+public class JwtUtil implements JwtTokenValidator {
 
     @Value("${jwt.secret}")
     private String secret;
@@ -43,13 +44,16 @@ public class JwtUtil {
                 .getBody();
     }
 
+
     public String extractUsername(String token) {
         return extractClaims(token).getSubject();
     }
 
+
     public boolean isTokenExpired(String token) {
         return extractClaims(token).getExpiration().before(new Date());
     }
+
 
     public boolean validateToken(String token, String username) {
         return (username.equals(extractUsername(token)) && !isTokenExpired(token));

@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.global.config;
+package org.ddcn41.ticketing_system.common.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
                 description = "APIs for ticketing system"
         ),
         servers = {
-                @Server(url = "/", description = "api.domain.com")
+                @Server(url = "http://localhost:8080", description = "개발 서버")
         }
 )
 @SecurityScheme(

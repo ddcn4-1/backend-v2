@@ -1,5 +1,6 @@
-package org.ddcn41.ticketing_system;
+package org.ddcn41.ticketing_system.auth.service;
 
+import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService implements CustomUserDetailsProvider, UserDetailsService {
 
     private final UserRepository userRepository;
 

@@ -1,5 +1,6 @@
-package org.ddcn41.ticketing_system;
+package org.ddcn41.ticketing_system.common.config;
 
+import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,12 +25,12 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
+    private final CustomUserDetailsProvider userDetailsProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService,
+    public SecurityConfig(CustomUserDetailsProvider userDetailsProvider,
                           JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.userDetailsService = userDetailsService;
+        this.userDetailsProvider = userDetailsProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -41,7 +43,7 @@ public class SecurityConfig {
     public DaoAuthenticationProvider authenticationProvider() {
 
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();   // FIXME - The constructor DaoAuthenticationProvider() is deprecated
-        authProvider.setUserDetailsService(userDetailsService);                     // FIXME - The method setUserDetailsService(UserDetailsService) from the type DaoAuthenticationProvider is deprecated
+        authProvider.setUserDetailsService((UserDetailsService) userDetailsProvider);                 // FIXME - The method setUserDetailsService(UserDetailsService) from the type DaoAuthenticationProvider is deprecated
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
