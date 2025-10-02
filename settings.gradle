@@ -1,1 +1,6 @@
 rootProject.name = 'ticketing-system'
+include 'module-api'
+include 'module-common'
+include 'module-core'
+include 'module-auth'
+include 'module-metric'

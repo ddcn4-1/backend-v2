@@ -1,0 +1,12 @@
+
+
+dependencies {
+    implementation project(':module-auth')
+    implementation project(':module-common')
+    implementation project(':module-core')
+    implementation project(':module-metric')
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
