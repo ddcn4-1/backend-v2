@@ -1,8 +1,8 @@
 package org.ddcn41.ticketing_system.api.domain.admin.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.api.dto.AuthLogDto;
-import org.ddcn41.ticketing_system.api.dto.DashboardDto;
+import org.ddcn41.ticketing_system.api.domain.admin.dto.AuthLogDto;
+import org.ddcn41.ticketing_system.api.domain.admin.dto.DashboardDto;
 import org.ddcn41.ticketing_system.api.domain.auth.service.AuthAuditService;
 import org.springframework.boot.actuate.audit.AuditEvent;
 import org.springframework.stereotype.Service;

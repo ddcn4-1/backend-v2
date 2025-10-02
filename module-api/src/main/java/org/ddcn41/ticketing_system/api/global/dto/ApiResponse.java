@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.api.dto.response;
+package org.ddcn41.ticketing_system.api.global.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

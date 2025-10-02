@@ -12,18 +12,21 @@ import jakarta.validation.Valid;
 import org.ddcn41.ticketing_system.api.domain.auth.dto.AuthDtos;
 import org.ddcn41.ticketing_system.api.domain.auth.dto.AuthDtos.EnhancedAuthResponse;
 import org.ddcn41.ticketing_system.api.domain.auth.dto.AuthDtos.LoginRequest;
-import org.ddcn41.ticketing_system.api.domain.auth.service.AuthAuditService;
-import org.ddcn41.ticketing_system.api.domain.user.entity.User;
-import org.ddcn41.ticketing_system.api.global.config.JwtUtil;
 import org.ddcn41.ticketing_system.api.domain.auth.dto.response.LogoutResponse;
+import org.ddcn41.ticketing_system.api.domain.auth.service.AuthAuditService;
 import org.ddcn41.ticketing_system.api.domain.auth.service.AuthService;
+import org.ddcn41.ticketing_system.api.domain.user.entity.User;
 import org.ddcn41.ticketing_system.api.domain.user.service.UserService;
+import org.ddcn41.ticketing_system.api.global.config.JwtUtil;
 import org.ddcn41.ticketing_system.api.global.util.TokenExtractor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
@@ -123,7 +126,7 @@ public class AuthController {
                     description = "Token processing error"
             )
     })
-    public ResponseEntity<org.ddcn41.ticketing_system.api.dto.response.ApiResponse<LogoutResponse>> logout(
+    public ResponseEntity<org.ddcn41.ticketing_system.api.global.dto.ApiResponse<LogoutResponse>> logout(
             HttpServletRequest request,
             Authentication authentication) {
 
@@ -131,7 +134,7 @@ public class AuthController {
         String token = tokenExtractor.extractTokenFromRequest(request);
 
         LogoutResponse logoutData = authService.processLogout(token, username);
-        org.ddcn41.ticketing_system.api.dto.response.ApiResponse<LogoutResponse> response = org.ddcn41.ticketing_system.api.dto.response.ApiResponse.success("로그아웃 완료", logoutData);
+        org.ddcn41.ticketing_system.api.global.dto.ApiResponse<LogoutResponse> response = org.ddcn41.ticketing_system.api.global.dto.ApiResponse.success("로그아웃 완료", logoutData);
 
         authAuditService.logLogout(username);
 

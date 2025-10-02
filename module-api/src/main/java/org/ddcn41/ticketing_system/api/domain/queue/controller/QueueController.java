@@ -11,8 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-// Queue 관련 import
 import org.ddcn41.ticketing_system.api.domain.queue.dto.request.HeartbeatRequest;
 import org.ddcn41.ticketing_system.api.domain.queue.dto.request.TokenActivateRequest;
 import org.ddcn41.ticketing_system.api.domain.queue.dto.request.TokenIssueRequest;
@@ -21,14 +19,9 @@ import org.ddcn41.ticketing_system.api.domain.queue.dto.response.QueueCheckRespo
 import org.ddcn41.ticketing_system.api.domain.queue.dto.response.QueueStatusResponse;
 import org.ddcn41.ticketing_system.api.domain.queue.dto.response.TokenIssueResponse;
 import org.ddcn41.ticketing_system.api.domain.queue.service.QueueService;
-
-// User 관련 import
 import org.ddcn41.ticketing_system.api.domain.user.entity.User;
 import org.ddcn41.ticketing_system.api.domain.user.service.UserService;
-
-// Response 관련 import
-import org.ddcn41.ticketing_system.api.dto.response.ApiResponse;
-
+import org.ddcn41.ticketing_system.api.global.dto.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;

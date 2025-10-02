@@ -14,6 +14,7 @@ import org.ddcn41.ticketing_system.api.domain.seat.service.ScheduleSeatInitializ
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -37,13 +38,13 @@ public class AdminScheduleSeatController {
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
             @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
     })
-    public ResponseEntity<org.ddcn41.ticketing_system.api.dto.response.ApiResponse<List<InitializeSeatsResponse>>> initializeAllSchedules(
+    public ResponseEntity<org.ddcn41.ticketing_system.api.global.dto.ApiResponse<List<InitializeSeatsResponse>>> initializeAllSchedules(
             @Parameter(description = "Dry run without persisting", required = false)
             @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun
     ) {
         List<InitializeSeatsResponse> results = initializationService.initializeAll(dryRun);
         return ResponseEntity.ok(
-                org.ddcn41.ticketing_system.api.dto.response.ApiResponse
+                org.ddcn41.ticketing_system.api.global.dto.ApiResponse
                         .success(dryRun ? "모든 스케줄 좌석 초기화 미리보기" : "모든 스케줄 좌석 초기화 완료", results)
         );
     }
@@ -61,7 +62,7 @@ public class AdminScheduleSeatController {
             @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
             @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
     })
-    public ResponseEntity<org.ddcn41.ticketing_system.api.dto.response.ApiResponse<InitializeSeatsResponse>> initializeScheduleSeats(
+    public ResponseEntity<org.ddcn41.ticketing_system.api.global.dto.ApiResponse<InitializeSeatsResponse>> initializeScheduleSeats(
             @Parameter(description = "Schedule ID", required = true)
             @PathVariable Long scheduleId,
             @Parameter(description = "Dry run without persisting", required = false)
@@ -69,7 +70,7 @@ public class AdminScheduleSeatController {
     ) {
         InitializeSeatsResponse result = initializationService.initialize(scheduleId, dryRun);
         return ResponseEntity.ok(
-                org.ddcn41.ticketing_system.api.dto.response.ApiResponse
+                org.ddcn41.ticketing_system.api.global.dto.ApiResponse
                         .success(dryRun ? "좌석 초기화 미리보기" : "좌석 초기화 완료", result)
         );
     }

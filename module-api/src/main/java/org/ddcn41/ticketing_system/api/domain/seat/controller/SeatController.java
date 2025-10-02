@@ -1,21 +1,21 @@
 package org.ddcn41.ticketing_system.api.domain.seat.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.api.domain.seat.dto.request.SeatConfirmRequest;
 import org.ddcn41.ticketing_system.api.domain.seat.dto.request.SeatLockRequest;
 import org.ddcn41.ticketing_system.api.domain.seat.dto.request.SeatReleaseRequest;
-import org.ddcn41.ticketing_system.api.dto.response.ApiResponse;
 import org.ddcn41.ticketing_system.api.domain.seat.dto.response.SeatAvailabilityResponse;
 import org.ddcn41.ticketing_system.api.domain.seat.dto.response.SeatLockResponse;
 import org.ddcn41.ticketing_system.api.domain.seat.service.SeatService;
 import org.ddcn41.ticketing_system.api.domain.user.entity.User;
 import org.ddcn41.ticketing_system.api.domain.user.service.UserService;
+import org.ddcn41.ticketing_system.api.global.dto.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 /**

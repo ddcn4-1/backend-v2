@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.api.dto;
+package org.ddcn41.ticketing_system.api.domain.admin.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
