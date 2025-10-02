@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth;
+package org.ddcn41.ticketing_system.auth.utils;
 
 import org.springframework.boot.actuate.audit.AuditEvent;
 

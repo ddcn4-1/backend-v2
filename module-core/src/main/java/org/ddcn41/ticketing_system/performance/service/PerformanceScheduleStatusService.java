@@ -1,7 +1,7 @@
 package org.ddcn41.ticketing_system.performance.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.auth.AuditEventBuilder;
+import org.ddcn41.ticketing_system.auth.utils.AuditEventBuilder;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
 import org.springframework.boot.actuate.audit.AuditEventRepository;
 import org.springframework.stereotype.Service;

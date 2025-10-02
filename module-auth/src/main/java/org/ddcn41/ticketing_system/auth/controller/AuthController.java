@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth;
+package org.ddcn41.ticketing_system.auth.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +15,8 @@ import org.ddcn41.ticketing_system.auth.dto.AuthDtos.LoginRequest;
 import org.ddcn41.ticketing_system.auth.dto.response.LogoutResponse;
 import org.ddcn41.ticketing_system.auth.service.AuthAuditService;
 import org.ddcn41.ticketing_system.auth.service.AuthService;
+import org.ddcn41.ticketing_system.auth.utils.JwtUtil;
+import org.ddcn41.ticketing_system.auth.utils.TokenExtractor;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.service.UserService;
 import org.springframework.http.ResponseEntity;
