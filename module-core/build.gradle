@@ -1,11 +1,8 @@
 dependencies {
     implementation project(':module-common')
     implementation project(':module-auth')
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    //swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // AWS SDK 추가 (스케일링 기능용)
     implementation 'software.amazon.awssdk:lambda:2.21.29'
@@ -14,14 +11,6 @@ dependencies {
     // AWS S3
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0")
 
-//    JWT
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.11.5'
-
-// Redis - Jedis  (동시성 제어용)
-    implementation 'redis.clients:jedis:4.4.3'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
