@@ -1,12 +1,12 @@
-package org.ddcn41.ticketing_system;
+package org.ddcn41.ticketing_system.common.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.ddcn41.ticketing_system.auth.service.TokenBlacklistService;
-import org.ddcn41.ticketing_system.auth.utils.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
+import org.ddcn41.ticketing_system.common.service.JwtTokenValidator;
+import org.ddcn41.ticketing_system.common.service.TokenBlacklistChecker;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,14 +19,17 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtTokenValidator jwtTokenValidator;
+    private final CustomUserDetailsProvider userDetailsProvider;
+    private final TokenBlacklistChecker tokenBlacklistChecker;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @Autowired
-    private TokenBlacklistService tokenBlacklistService;
+    public JwtAuthenticationFilter(JwtTokenValidator jwtTokenValidator,
+                                   CustomUserDetailsProvider userDetailsProvider,
+                                   TokenBlacklistChecker tokenBlacklistChecker) {
+        this.jwtTokenValidator = jwtTokenValidator;
+        this.userDetailsProvider = userDetailsProvider;
+        this.tokenBlacklistChecker = tokenBlacklistChecker;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -39,20 +42,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             try {
                 // 1. 블랙리스트 체크
-                if (tokenBlacklistService.isTokenBlacklisted(token)) {
+                if (tokenBlacklistChecker.isTokenBlacklisted(token)) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.getWriter().write("{\"error\":\"Token has been invalidated\"}");
                     return;
                 }
 
                 // 2. 토큰에서 사용자명 추출
-                String username = jwtUtil.extractUsername(token);
+                String username = jwtTokenValidator.extractUsername(token);
 
                 // 3. 토큰 유효성 검증
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UserDetails userDetails = userDetailsProvider.loadUserByUsername(username);
 
-                    if (jwtUtil.validateToken(token, username)) {
+                    if (jwtTokenValidator.validateToken(token, username)) {
                         UsernamePasswordAuthenticationToken authToken =
                                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

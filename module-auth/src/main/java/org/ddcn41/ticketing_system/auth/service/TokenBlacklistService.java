@@ -1,5 +1,6 @@
 package org.ddcn41.ticketing_system.auth.service;
 
+import org.ddcn41.ticketing_system.common.service.TokenBlacklistChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -8,7 +9,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Service
-public class TokenBlacklistService {
+public class TokenBlacklistService implements TokenBlacklistChecker {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -32,6 +33,7 @@ public class TokenBlacklistService {
     /**
      * 토큰이 블랙리스트에 있는지 확인
      */
+
     public boolean isTokenBlacklisted(String token) {
         String key = BLACKLIST_KEY_PREFIX + token;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
