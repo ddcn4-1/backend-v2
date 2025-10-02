@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.global.config;
+package org.ddcn41.ticketing_system;
 
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;

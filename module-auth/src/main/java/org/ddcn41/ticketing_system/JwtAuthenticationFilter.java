@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.global.config;
+package org.ddcn41.ticketing_system;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.global.config;
+package org.ddcn41.ticketing_system;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
