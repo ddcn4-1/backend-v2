@@ -25,14 +25,24 @@ public class JwtUtil implements JwtTokenValidator {
     }
 
     public String generate(String username) {
+        return generate(username, null);
+    }
+
+    public String generate(String username, Long userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenValidityMs);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .setExpiration(expiryDate);
+
+        // userId가 있으면 claim에 추가
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+
+        return builder.signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -44,16 +54,22 @@ public class JwtUtil implements JwtTokenValidator {
                 .getBody();
     }
 
-
     public String extractUsername(String token) {
         return extractClaims(token).getSubject();
     }
 
+    public Long extractUserId(String token) {
+        Claims claims = extractClaims(token);
+        Object userIdObj = claims.get("userId");
+        if (userIdObj != null) {
+            return Long.valueOf(userIdObj.toString());
+        }
+        return null;
+    }
 
     public boolean isTokenExpired(String token) {
         return extractClaims(token).getExpiration().before(new Date());
     }
-
 
     public boolean validateToken(String token, String username) {
         return (username.equals(extractUsername(token)) && !isTokenExpired(token));

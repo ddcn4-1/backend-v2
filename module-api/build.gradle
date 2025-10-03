@@ -1,10 +1,22 @@
-
-
 dependencies {
     implementation project(':module-auth')
     implementation project(':module-common')
     implementation project(':module-core')
     implementation project(':module-metric')
+    implementation project(':module-queue')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'}
+
+bootJar {
+    enabled = true
+}
+
+jar {
+    enabled = false
 }
 
 tasks.test {

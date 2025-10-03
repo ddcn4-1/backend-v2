@@ -17,6 +17,7 @@ import org.ddcn41.ticketing_system.auth.service.AuthAuditService;
 import org.ddcn41.ticketing_system.auth.service.AuthService;
 import org.ddcn41.ticketing_system.auth.utils.JwtUtil;
 import org.ddcn41.ticketing_system.auth.utils.TokenExtractor;
+import org.ddcn41.ticketing_system.common.domain.CustomUserDetails;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("v1/auth")
+@RequestMapping("/v1/auth")
 @Tag(name = "Authentication", description = "사용자 인증 API")
 public class AuthController {
 
@@ -80,8 +81,13 @@ public class AuthController {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(actualUsername, dto.getPassword())
             );
+            Long userId = null;
+            if (auth.getPrincipal() instanceof CustomUserDetails) {
+                userId = ((CustomUserDetails) auth.getPrincipal()).getUserId();
+            }
 
-            String token = jwtUtil.generate(auth.getName());
+            String token = jwtUtil.generate(auth.getName(), userId);
+
 
             // 사용자 정보 조회 및 마지막 로그인 시간 업데이트
             User user = userService.updateUserLoginTime(actualUsername);
