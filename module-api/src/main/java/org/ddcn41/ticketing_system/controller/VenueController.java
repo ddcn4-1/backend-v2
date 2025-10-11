@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.venue.controller;
+package org.ddcn41.ticketing_system.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.venue.dto.VenueDto;

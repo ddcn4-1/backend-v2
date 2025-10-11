@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.queue.controller;
+package org.ddcn41.ticketing_system.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
