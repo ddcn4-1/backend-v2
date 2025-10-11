@@ -5,8 +5,31 @@ dependencies {
     implementation project(':module-common')
     implementation project(':module-core')
     implementation project(':module-metric')
+
+    implementation 'com.amazonaws.serverless:aws-serverless-java-container-springboot3:2.0.3'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
 }
 
 tasks.test {
     useJUnitPlatform()
 }
+
+task buildLambdaZip(type: Zip) {
+    archiveFileName = 'admin-api-lambda.zip'
+    destinationDirectory = file("$buildDir/distributions")
+
+    from(compileJava) {
+        into('')
+    }
+
+    from(processResources) {
+        into('')
+    }
+
+    from(configurations.runtimeClasspath) {
+        into('lib')
+    }
+}
+
+build.dependsOn buildLambdaZip
