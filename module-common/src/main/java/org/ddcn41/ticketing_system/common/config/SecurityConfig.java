@@ -62,8 +62,8 @@ public class SecurityConfig {
                         // 인증 관련 엔드포인트 허용
                         .requestMatchers("/v1/auth/**").permitAll()
                         .requestMatchers("/v1/admin/auth/login").permitAll()  // 관리자 로그인만 허용
-
-                        // 헬스체크 허용
+                                .requestMatchers("/v1/admin/auth/logout").permitAll()
+                                // 헬스체크 허용
                         .requestMatchers("/actuator/**").permitAll()
 
                         // Swagger / OpenAPI 문서 허용
@@ -124,7 +124,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://ddcn41.com", "https://api.ddcn41.com"));
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "https://ddcn41.com",
+                "https://api.ddcn41.com",
+                "https://local.ddcn41.com",
+                "https://local.api.ddcn41.com",
+                "https://local.accounts.ddcn41.com",
+                "https://local.admin.ddcn41.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
