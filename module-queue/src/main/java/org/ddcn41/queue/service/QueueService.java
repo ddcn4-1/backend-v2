@@ -308,10 +308,12 @@ public class QueueService {
         String activeTokensKey = ACTIVE_TOKENS_KEY_PREFIX + performanceId;
 
         synchronized (queueLock) {
+            // 1) 락 안에서 "현재" 순번 재계산 (진짜 1등인지 확인)
             Long currentPosition = queueTokenRepository.findPositionInQueue(
                     performanceId, queueToken.getIssuedAt()
             ) + 1;
 
+            // 2) 맨 앞이 아니면 거절 (FIFO 보장)
             if (currentPosition > 1) {
                 queueTokenRepository.save(queueToken);
                 throw new ResponseStatusException(
@@ -319,7 +321,8 @@ public class QueueService {
                         "아직 차례가 아닙니다. 현재 대기번호: " + currentPosition
                 );
             }
-
+            // 3) 활성 슬롯 확인(동기화 포함)
+            // ID로 조회
             Long dbActiveCount = queueTokenRepository.countActiveTokensByPerformanceId(performanceId);
             String redisCountStr = redisTemplate.opsForValue().get(activeTokensKey);
             int redisActiveCount = redisCountStr != null ? Integer.parseInt(redisCountStr) : 0;
@@ -328,6 +331,7 @@ public class QueueService {
                 log.warn("Redis-DB 불일치 감지. Redis: {}, DB: {}. DB 기준으로 동기화...",
                         redisActiveCount, dbActiveCount);
 
+                // DB 값을 신뢰할 수 있는 source of truth로 사용
                 redisTemplate.opsForValue().set(activeTokensKey, dbActiveCount.toString());
                 redisTemplate.expire(activeTokensKey, Duration.ofMinutes(10));
                 redisActiveCount = dbActiveCount.intValue();

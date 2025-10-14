@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/admin/auth")
+@RequestMapping("v1/admin/auth")
 @Tag(name = "Admin Authentication", description = "APIs for administrator authentication")
 public class AdminAuthController {
 

@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.common.domain;
+package org.ddcn41.queue.domain;
 
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;

@@ -9,6 +9,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,6 +28,14 @@ public class SecurityConfig {
 
     private final CustomUserDetailsProvider userDetailsProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    private static final String[] SWAGGER_WHITELIST = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/swagger-resources/**",
+            "/webjars/**"
+    };
 
     public SecurityConfig(CustomUserDetailsProvider userDetailsProvider,
                           JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -55,25 +64,26 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // ★ 여기 추가
+                .httpBasic(AbstractHttpConfigurer::disable)
+                // (선택) 로그인 페이지 리다이렉트 자체도 막고 싶다면 함께 비활성화
+                .formLogin(AbstractHttpConfigurer::disable)
+
                 .authorizeHttpRequests(authz -> authz
+                                .anyRequest().permitAll()  // 임시로 모두 허용
+                                /*// Swagger / OpenAPI 문서 허용
+                                .requestMatchers(SWAGGER_WHITELIST).permitAll()
                                 // 인증 관련 엔드포인트 허용
                                 .requestMatchers("/v1/auth/**").permitAll()
                                 .requestMatchers("/v1/admin/auth/login").permitAll()  // 관리자 로그인만 허용
 
+
+
                                 // 헬스체크 허용
                                 .requestMatchers("/actuator/**").permitAll()
-
-                                // Swagger / OpenAPI 문서 허용
-                                .requestMatchers(
-                                        "/v3/api-docs",
-                                        "/v3/api-docs/**",
-                                        "/v3/api-docs.yaml",
-                                        "/swagger-ui/**",
-                                        "/swagger-ui.html"
-                                ).permitAll()
 
                                 .requestMatchers("/v1/queue/release-session").permitAll()// Beacon을 통한 세션 해제는 인증 없이 허용 (전용 엔드포인트)
 
@@ -109,7 +119,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/v1/venues/**").permitAll()
 
                                 // 나머지는 인증 필요
-                                .anyRequest().authenticated()
+                                .anyRequest().authenticated()*/
 
                 );
 
@@ -124,7 +134,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://ddcn41.com", "https://api.ddcn41.com"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://ddcn41.com", "https://api.ddcn41.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

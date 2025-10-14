@@ -1,3 +1,4 @@
+// module-auth/build.gradle
 dependencies {
     implementation project(':module-common')
     implementation project(':module-metric')

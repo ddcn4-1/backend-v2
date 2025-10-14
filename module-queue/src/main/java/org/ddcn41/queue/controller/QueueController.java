@@ -11,10 +11,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.common.domain.CustomUserDetails;
-import org.ddcn41.ticketing_system.common.dto.ApiResponse;
-import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
-import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyResponse;
+
+import org.ddcn41.queue.domain.CustomUserDetails;
+import org.ddcn41.queue.dto.ApiResponse;
+import org.ddcn41.queue.dto.queue.TokenVerifyRequest;
+import org.ddcn41.queue.dto.queue.TokenVerifyResponse;
+
 import org.ddcn41.queue.dto.request.HeartbeatRequest;
 import org.ddcn41.queue.dto.request.TokenActivateRequest;
 import org.ddcn41.queue.dto.request.TokenIssueRequest;
@@ -47,7 +49,6 @@ public class QueueController {
      */
     @PostMapping("/token/{token}/verify")
     @Operation(summary = "토큰 검증", description = "예매 전 대기열 토큰 유효성 검증")
-    @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -355,16 +356,35 @@ public class QueueController {
             throw new RuntimeException("userId를 추출할 수 없습니다", e);
         }
     }*/
+    // QueueController.java의 extractUserIdFromAuth 수정
     private Long extractUserIdFromAuth(Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다");
+        }
+
         Object principal = authentication.getPrincipal();
 
+        // 1. CustomUserDetails인 경우
         if (principal instanceof CustomUserDetails) {
             return ((CustomUserDetails) principal).getUserId();
         }
 
+        // 2. Long 타입인 경우 (JwtAuthFilter에서 userId를 직접 넣은 경우)
+        if (principal instanceof Long) {
+            return (Long) principal;
+        }
+
+        // 3. String 타입인 경우 (username)
+        if (principal instanceof String) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "userId를 포함한 JWT를 사용하세요"
+            );
+        }
+
         throw new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
-                "사용자 ID를 추출할 수 없습니다"
+                "사용자 ID를 추출할 수 없습니다. Principal type: " + principal.getClass()
         );
     }
 }

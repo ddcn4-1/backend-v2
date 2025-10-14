@@ -1,9 +1,12 @@
+//module-core/build.gradle
 dependencies {
     implementation project(':module-common')
     implementation project(':module-auth')
     implementation project(':module-metric')
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
     // AWS SDK 추가 (스케일링 기능용)
     implementation 'software.amazon.awssdk:lambda:2.21.29'
@@ -12,7 +15,7 @@ dependencies {
     // AWS S3
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0")
 
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
 
 
     runtimeOnly 'com.h2database:h2'
