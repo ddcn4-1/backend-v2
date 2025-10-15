@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.booking.dto.request.CancelBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.request.CreateBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CancelBooking200ResponseDto;
@@ -23,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/bookings")
@@ -81,9 +84,18 @@ public class BookingController {
             @Parameter(description = "Page number (1-based)", example = "1")
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @Parameter(description = "Items per page", example = "20")
-            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit) {
+            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit,
+            HttpServletRequest request) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth != null ? auth.getName() : null;
+        String authHeader = request.getHeader("Authorization");
+        log.info("[CONTROLLER] Authorization header: {}", authHeader != null ? "Present" : "Missing");
+        if (auth == null || !auth.isAuthenticated()) {
+            log.error("[CONTROLLER] Authentication check failed - returning 401");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username = auth.getName();
+        log.info("[CONTROLLER] Processing bookings for user: {}", username);
         return ResponseEntity.ok(bookingService.getUserBookings(username, status, page, limit));
     }
 
@@ -97,6 +109,7 @@ public class BookingController {
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
             @ApiResponse(responseCode = "404", description = "Booking not found", content = @Content)
     })
+
     public ResponseEntity<CancelBooking200ResponseDto> cancelBooking(
             @Parameter(description = "Booking ID", required = true)
             @PathVariable Long bookingId,

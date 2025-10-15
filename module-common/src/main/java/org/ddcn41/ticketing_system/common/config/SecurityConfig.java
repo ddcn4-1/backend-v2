@@ -1,6 +1,8 @@
 package org.ddcn41.ticketing_system.common.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,9 +22,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(CognitoProperties.class)
 public class SecurityConfig {
 
     private final CustomUserDetailsProvider userDetailsProvider;
@@ -56,6 +61,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
@@ -100,7 +106,6 @@ public class SecurityConfig {
                         // 공연조회 API 허용
                         .requestMatchers("/v1/performances/**").permitAll()
 
-
                         // 예매 관련 API - 인증 필요
                         .requestMatchers("/v1/bookings/**").permitAll()
 
@@ -108,16 +113,11 @@ public class SecurityConfig {
                         .requestMatchers("/v1/schedules/**").permitAll()
                         // 공연장 조회/좌석맵 조회 API (GET만 허용)
                         .requestMatchers(HttpMethod.GET, "/v1/venues/**").permitAll()
-
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
-
                 );
 
         http.authenticationProvider(authenticationProvider());
-
-        // JWT 필터를 UsernamePasswordAuthenticationFilter 이전에 추가
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -135,7 +135,7 @@ public class SecurityConfig {
                 "https://local.admin.ddcn41.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
