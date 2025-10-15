@@ -1,5 +1,8 @@
 package org.ddcn41.ticketing_system.auth.service;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.common.service.TokenBlacklistChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -8,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class TokenBlacklistService implements TokenBlacklistChecker {
 
@@ -46,5 +50,44 @@ public class TokenBlacklistService implements TokenBlacklistChecker {
         // username을 키로 하는 블랙리스트 (구현 방법은 다양함)
         String userKey = "blacklisted_user:" + username;
         redisTemplate.opsForValue().set(userKey, LocalDateTime.now().toString(), Duration.ofHours(24));
+    }
+
+    @Override
+    public void addToBlacklist(String token) {
+        try {
+            // JWT에서 만료시간 추출
+            DecodedJWT jwt = JWT.decode(token);
+            long expirationTimeMs = jwt.getExpiresAt().getTime();
+
+            // 기존 메서드 재사용
+            blacklistToken(token, expirationTimeMs);
+
+            log.info("Token added to blacklist (auto-expiry)");
+        } catch (Exception e) {
+            log.error("Failed to add token to blacklist", e);
+        }
+    }
+
+    /**
+     * TokenBlacklistChecker 인터페이스 구현
+     * TTL을 직접 지정해서 블랙리스트에 추가
+     */
+    @Override
+    public void addToBlacklist(String token, long ttlSeconds) {
+        try {
+            String key = BLACKLIST_KEY_PREFIX + token;
+            redisTemplate.opsForValue().set(key, LocalDateTime.now().toString(), Duration.ofSeconds(ttlSeconds));
+            log.info("Token added to blacklist with TTL: {} seconds", ttlSeconds);
+        } catch (Exception e) {
+            log.error("Failed to add token to blacklist with TTL", e);
+        }
+    }
+
+    /**
+     * Cognito 토큰 전용 편의 메서드
+     */
+    public void blacklistCognitoToken(String accessToken) {
+        addToBlacklist(accessToken);  // 자동으로 만료시간 추출
+        log.info("Cognito access token blacklisted");
     }
 }
