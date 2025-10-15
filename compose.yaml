@@ -1,6 +1,4 @@
 # ticketing-system/docker-compose.yml
-version: '3.8'
-
 services:
   # 공용 PostgreSQL
   postgres:

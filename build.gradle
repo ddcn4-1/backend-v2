@@ -4,23 +4,20 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-allprojects {
-    group = 'org.ddcn41'
-    version = '0.0.1-SNAPSHOT'
-
-    repositories {
-        mavenCentral()
-        maven { url 'https://repo.springdoc.org/release' }
-    }
+ext {
+    springCloudVersion = '2024.0.0'
+    awsSdkBom = '2.21.29'
+    lombokVersion = '1.18.32'
 
 }
 
+allprojects {
+    group = 'org.ddcn41'
+    version = '0.0.1-SNAPSHOT'
+}
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
-    apply plugin: 'org.springframework.boot'
-
-    description = 'back-office for ticketing system'
 
     java {
         toolchain {
@@ -28,56 +25,36 @@ subprojects {
         }
     }
 
-    configurations {
-        compileOnly {
-            extendsFrom annotationProcessor
-        }
-    }
-
     dependencyManagement {
         imports {
-            mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.3"
+            mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.5"
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+            mavenBom "software.amazon.awssdk:bom:${awsSdkBom}"
+        }
+        dependencies {
+            dependency "org.projectlombok:lombok:${lombokVersion}"
         }
     }
-    bootJar {
-        enabled = false
-    }
 
+    // 공통 의존성 (모든 서브 모듈)
     dependencies {
-        compileOnly 'org.projectlombok:lombok'
-        annotationProcessor 'org.projectlombok:lombok'
-
-        implementation 'org.springframework.boot:spring-boot-starter-web'
-        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-        implementation 'org.springframework.boot:spring-boot-starter-security'
-        implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-        //swagger
-        implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
-
-        //    JWT
-        implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-        runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.11.5'
-        runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.11.5'
-
-        //redis
-        implementation 'redis.clients:jedis:4.4.3'
-        implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'org.springframework.security:spring-security-test'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
     }
 
-    tasks.named('test') {
+    test {
         useJUnitPlatform()
     }
+
+    // 기본적으로 bootJar 비활성화 (실행 모듈만 활성화)
+    tasks.withType(org.springframework.boot.gradle.tasks.bundling.BootJar) {
+        enabled = false
+    }
+    tasks.withType(Jar) {
+        enabled = true
+    }
 }
-
-dependencies {
-
-}
-
-
