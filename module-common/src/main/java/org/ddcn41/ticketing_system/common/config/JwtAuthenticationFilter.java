@@ -103,11 +103,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             List<SimpleGrantedAuthority> authorities = userInfo.getGroups().stream()
-                    .map(group -> new SimpleGrantedAuthority(group.toUpperCase()))
+                    .map(group -> new SimpleGrantedAuthority("ROLE_" + group.toUpperCase()))
                     .collect(Collectors.toList());
 
             if (authorities.isEmpty()) {
-                authorities.add(new SimpleGrantedAuthority("USER"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
             }
 
             UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
