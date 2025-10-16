@@ -52,7 +52,7 @@ spring:
 # 프로덕션 로깅 설정
 logging:
   level:
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
     org.hibernate.SQL: WARN
     org.springframework.web: WARN
     org.springframework.jdbc: WARN

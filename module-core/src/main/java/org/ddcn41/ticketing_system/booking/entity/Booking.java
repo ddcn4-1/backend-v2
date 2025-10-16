@@ -1,10 +1,7 @@
 package org.ddcn41.ticketing_system.booking.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,6 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"user", "schedule", "bookingSeats"})
 public class Booking {
 
     @Id

@@ -11,6 +11,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -33,6 +34,14 @@ public class SecurityConfig {
     private final CustomUserDetailsProvider userDetailsProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    private static final String[] SWAGGER_WHITELIST = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/swagger-resources/**",
+            "/webjars/**"
+    };
+
     public SecurityConfig(CustomUserDetailsProvider userDetailsProvider,
                           JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsProvider = userDetailsProvider;
@@ -46,9 +55,8 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();   // FIXME - The constructor DaoAuthenticationProvider() is deprecated
-        authProvider.setUserDetailsService((UserDetailsService) userDetailsProvider);                 // FIXME - The method setUserDetailsService(UserDetailsService) from the type DaoAuthenticationProvider is deprecated
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService((UserDetailsService) userDetailsProvider);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -60,65 +68,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        http.csrf(AbstractHttpConfigurer::disable)
+                //  CORS 비활성화 (Nginx에서 처리)
+                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        // 인증 관련 엔드포인트 허용
-                        .requestMatchers("/v1/auth/**").permitAll()
-                        .requestMatchers("/v1/admin/auth/login").permitAll()  // 관리자 로그인만 허용
-                        .requestMatchers("/actuator/**").permitAll() // 헬스체크 허용
-
-                        // Swagger / OpenAPI 문서 허용
-                        .requestMatchers(
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
-
-                        .requestMatchers("/v1/queue/release-session").permitAll()// Beacon을 통한 세션 해제는 인증 없이 허용 (전용 엔드포인트)
-
-                        // Queue API는 인증 필요 (대부분의 엔드포인트가 @SecurityRequirement 있음)
-                        .requestMatchers("/v1/queue/**").authenticated()
-
-//                        // 정적 리소스 및 페이지 라우팅 허용
-//                        .requestMatchers("/", "/index.html", "/login.html", "/admin-login.html", "/admin.html").permitAll()
-//                        .requestMatchers("/login", "/admin/login", "/admin/dashboard").permitAll()
-//                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
-
-                        // 관리자 전용 API 엔드포인트 (로그인 후 ADMIN 권한 필요)
-                        .requestMatchers("/v1/admin/auth/**").hasRole("ADMIN")
-
-                        .requestMatchers("/v1/admin/users/**").hasAnyRole("ADMIN", "DEVOPS")
-                        .requestMatchers("/v1/admin/performances/**").hasAnyRole("ADMIN")
-
-                        // .requestMatchers("/v1/admin/schedules/**").hasRole("ADMIN")
-                        .requestMatchers("/v1/admin/schedules/**").permitAll()  // 임시로 전체 허용 (개발/테스트용)
-                        .requestMatchers("/v1/admin/bookings/**").permitAll()  // 임시로 전체 허용 (개발/테스트용)
-                        // .requestMatchers("/v1/admin/bookings/**").hasRole("ADMIN")
-
-                        // 공연조회 API 허용
-                        .requestMatchers("/v1/performances/**").permitAll()
-
-                        // 예매 관련 API - 인증 필요
-                        .requestMatchers("/v1/bookings/**").permitAll()
-
-                        // 좌석 조회 API 허용 (스케줄별 좌석 가용성 조회)
-                        .requestMatchers("/v1/schedules/**").permitAll()
-                        // 공연장 조회/좌석맵 조회 API (GET만 허용)
-                        .requestMatchers(HttpMethod.GET, "/v1/venues/**").permitAll()
-                        // 나머지는 인증 필요
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 );
 
         http.authenticationProvider(authenticationProvider());
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // ⭐ corsConfigurationSource Bean 제거 또는 주석처리
+    /*
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -138,5 +105,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+        // Nginx에서 처리하므로 불필요
+        ...
     }
+    */
 }
