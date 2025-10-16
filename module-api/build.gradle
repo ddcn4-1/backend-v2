@@ -7,9 +7,9 @@ plugins {
 
 // module-common, module-core 의존성 제거
 dependencies {
-    implementation project(':module-auth')
     implementation project(':module-common')
     implementation project(':module-core')
+    implementation project(':module-auth')
     implementation project(':module-metric')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'

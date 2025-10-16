@@ -40,7 +40,7 @@ bootJar {
     mainClass = 'org.ddcn41.ticketing_system.auth.AuthServiceApplication'
 }
 jar {
-    enabled = false
+    enabled = true
 }
 
 test {
