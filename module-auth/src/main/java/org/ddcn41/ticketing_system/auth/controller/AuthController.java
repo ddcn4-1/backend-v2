@@ -81,7 +81,6 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(actualUsername, dto.getPassword())
             );
 
-//            String token = jwtUtil.generate(auth.getName());
 
             // userId 포함하여 JWT 생성
             // user 변수를 먼저 선언
