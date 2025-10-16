@@ -1,6 +1,8 @@
 package org.ddcn41.ticketing_system.common.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,9 +18,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
+import java.util.List;
+
+@Slf4j
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(CognitoProperties.class)
 public class SecurityConfig {
 
     private final CustomUserDetailsProvider userDetailsProvider;
@@ -78,6 +88,23 @@ public class SecurityConfig {
     /*
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "https://ddcn41.com",
+                "https://api.ddcn41.com",
+                "https://local.ddcn41.com",
+                "https://local.api.ddcn41.com",
+                "https://local.accounts.ddcn41.com",
+                "https://local.admin.ddcn41.com"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
         // Nginx에서 처리하므로 불필요
         ...
     }
