@@ -98,10 +98,15 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(actualUsername, dto.getPassword())
             );
 
-            String token = jwtUtil.generate(auth.getName());
 
-            // 사용자 정보 조회 및 마지막 로그인 시간 업데이트
+            // userId 포함하여 JWT 생성
+            // user 변수를 먼저 선언
             User user = userService.updateUserLoginTime(actualUsername);
+
+            String token = jwtUtil.generate(auth.getName(), user.getUserId());
+
+            authAuditService.logLoginSuccess(actualUsername);
+
 
             authAuditService.logLoginSuccess(actualUsername);
 

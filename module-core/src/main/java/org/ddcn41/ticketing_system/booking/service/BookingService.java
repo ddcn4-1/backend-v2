@@ -17,14 +17,18 @@ import org.ddcn41.ticketing_system.booking.entity.Booking.BookingStatus;
 import org.ddcn41.ticketing_system.booking.entity.BookingSeat;
 import org.ddcn41.ticketing_system.booking.repository.BookingRepository;
 import org.ddcn41.ticketing_system.booking.repository.BookingSeatRepository;
+import org.ddcn41.ticketing_system.common.client.QueueClient;
+import org.ddcn41.ticketing_system.common.dto.ApiResponse;
+import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
+import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyResponse;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
-import org.ddcn41.ticketing_system.queue.service.QueueService;
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
 import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.ddcn41.ticketing_system.seat.service.SeatService;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -57,7 +61,7 @@ public class BookingService {
 
     private final SeatService seatService;
     private final BookingAuditService bookingAuditService;
-    private final QueueService queueService;
+    private final QueueClient queueClient;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String username, CreateBookingRequestDto req) {
@@ -152,13 +156,13 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
 
-        // 예매 완료 시 토큰 사용 처리
+        // 예매 완료 시 토큰 사용 - 호출
         if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
             try {
-                queueService.useToken(req.getQueueToken());
-                // log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", username, req.getQueueToken());
+                queueClient.useToken(req.getQueueToken());
+                log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", username, req.getQueueToken());
             } catch (Exception e) {
-                // log.warn("토큰 사용 처리 중 오류 발생: {}", e.getMessage());
+                log.warn("토큰 사용 처리 중 오류 발생: {}", e.getMessage());
                 // 예매는 완료되었으므로 로그만 남기고 계속 진행
             }
         }
@@ -185,36 +189,43 @@ public class BookingService {
 
         return toCreateResponse(saved);
     }
-    
+
     /**
-     * 대기열 토큰 검증 - schedule 파라미터 추가
+     * 대기열 토큰 검증 - 호출
      */
-    private void validateQueueTokenIfRequired(CreateBookingRequestDto req, User user, PerformanceSchedule schedule) {
+    private void validateQueueTokenIfRequired(
+            CreateBookingRequestDto req,
+            User user,
+            PerformanceSchedule schedule) {
+
         if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
-            boolean isValidToken = queueService.validateTokenForBooking(
-                    req.getQueueToken(),
-                    user.getUserId(),
-                    schedule.getPerformance().getPerformanceId()
-            );
 
-           if (!isValidToken) {
-               throw new ResponseStatusException(BAD_REQUEST,
-                       "유효하지 않은 대기열 토큰입니다. 토큰이 만료되었거나 다른 공연의 토큰입니다. 대기열을 통해 다시 시도해주세요.");
-           }
-
-            // 토큰 유효성 재확인 (동시성 이슈 대응)
             try {
-                if (!queueService.isTokenActiveForBooking(req.getQueueToken())) {
+                // FeignClient로 REST API 호출
+                TokenVerifyRequest verifyRequest = TokenVerifyRequest.builder()
+                        .userId(user.getUserId())
+                        .performanceId(schedule.getPerformance().getPerformanceId())
+                        .build();
+
+                ApiResponse<TokenVerifyResponse> response =
+                        queueClient.verifyToken(req.getQueueToken(), verifyRequest);
+
+                if (response.getData() == null || !response.getData().isValid()) {
                     throw new ResponseStatusException(BAD_REQUEST,
-                            "토큰이 예매 가능한 상태가 아닙니다. 시간이 만료되었을 수 있습니다.");
+                            "유효하지 않은 대기열 토큰입니다. " +
+                                    (response.getData() != null ? response.getData().getReason() : ""));
                 }
+
+            } catch (feign.FeignException e) {
+                log.error("Queue 서비스 호출 실패: {}", e.getMessage());
+                throw new ResponseStatusException(SERVICE_UNAVAILABLE,
+                        "대기열 서비스에 일시적으로 접근할 수 없습니다. 잠시 후 다시 시도해주세요.");
             } catch (Exception e) {
                 log.warn("토큰 검증 중 오류 발생: {}", e.getMessage());
                 throw new ResponseStatusException(BAD_REQUEST,
                         "토큰 검증 중 오류가 발생했습니다. 다시 시도해주세요.");
             }
         } else {
-            // 토큰이 없는 경우 - 공연별 정책에 따라 처리
             throw new ResponseStatusException(BAD_REQUEST,
                     "대기열 토큰이 필요합니다. 대기열에 참여해주세요.");
         }
