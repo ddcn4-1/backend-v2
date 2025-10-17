@@ -16,8 +16,8 @@
 
 
 ## 레포지토리에서 필요한 파일 yml 파일 목록 (공유된 애플노트 참고)
-   - module-api/resources/application.yaml 
-   - module-queue/resources/application.yaml 
+   - module-api/src/main/resources/application.yaml 
+   - module-queue/src/main/resources/application.yaml 
 
 ## 세팅 시작 : 현재 MSA-68 브랜치 (이후 main으로 변경 예정)
 
