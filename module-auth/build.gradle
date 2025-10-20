@@ -21,8 +21,8 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    // JWT
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    // JWT - api로 노출하여 다른 모듈에서도 사용 가능하도록
+    api 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
