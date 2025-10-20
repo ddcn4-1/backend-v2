@@ -1,8 +1,4 @@
-<<<<<<< HEAD:module-api/src/main/java/org/ddcn41/ticketing_system/controller/QueueController.java
-package org.ddcn41.ticketing_system.controller;
-=======
 package org.ddcn41.queue.controller;
->>>>>>> origin/feat/MSA-68:module-queue/src/main/java/org/ddcn41/queue/controller/QueueController.java
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
