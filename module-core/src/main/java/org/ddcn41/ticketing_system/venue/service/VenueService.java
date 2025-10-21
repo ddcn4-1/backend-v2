@@ -8,12 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class VenueService {
+
+    private static final String VENUE_NOT_FOUND_MSG = "Venue not found with id: ";
 
     private final VenueRepository venueRepository;
 
@@ -21,13 +22,13 @@ public class VenueService {
     public List<VenueDto> getAllVenues() {
         return venueRepository.findAll().stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // 공연장 ID로 조회
     public VenueDto getVenueById(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException("Venue not found with id: " + venueId));
+                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
         return convertToDto(venue);
     }
 
@@ -50,7 +51,7 @@ public class VenueService {
     @Transactional
     public VenueDto updateVenue(Long venueId, VenueDto venueDto) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException("Venue not found with id: " + venueId));
+                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
 
         venue.setVenueName(venueDto.getVenueName());
         venue.setAddress(venueDto.getAddress());
@@ -66,7 +67,7 @@ public class VenueService {
     @Transactional
     public void deleteVenue(Long venueId) {
         if (!venueRepository.existsById(venueId)) {
-            throw new RuntimeException("Venue not found with id: " + venueId);
+            throw new RuntimeException(VENUE_NOT_FOUND_MSG + venueId);
         }
         venueRepository.deleteById(venueId);
     }
@@ -74,7 +75,7 @@ public class VenueService {
     // 공연장 좌석 배치도 JSON 조회
     public String getVenueSeatMap(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException("Venue not found with id: " + venueId));
+                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
         return venue.getSeatMapJson();
     }
 

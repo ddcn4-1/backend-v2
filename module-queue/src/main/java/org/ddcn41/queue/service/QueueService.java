@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class QueueService {
+    private static final String TOKEN_ERROR_MSG = "토큰을 찾을 수 없습니다";
 
     private final QueueTokenRepository queueTokenRepository;
     private final RedisTemplate<String, String> redisTemplate;
@@ -232,7 +233,7 @@ public class QueueService {
     @Transactional(readOnly = true)
     public QueueStatusResponse getTokenStatus(String token) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("토큰을 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException(TOKEN_ERROR_MSG));
 
         if (queueToken.isExpired()) {
             queueToken.markAsExpired();
@@ -260,10 +261,10 @@ public class QueueService {
      */
     public QueueStatusResponse activateToken(String token, String userId, Long performanceId, Long scheduleId) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "토큰을 찾을 수 없습니다"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TOKEN_ERROR_MSG));
 
         if (!queueToken.getUserId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "토큰을 찾을 수 없습니다");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, TOKEN_ERROR_MSG);
         }
 
         if (!queueToken.getPerformanceId().equals(performanceId)) {
@@ -411,7 +412,7 @@ public class QueueService {
      */
     public void useToken(String token) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("토큰을 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException(TOKEN_ERROR_MSG));
 
         if (!queueToken.isActiveForBooking()) {
             throw new IllegalStateException("예매 가능한 상태가 아닙니다");
@@ -713,7 +714,7 @@ public class QueueService {
 
     public void cancelToken(String token, String userId) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("토큰을 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException(TOKEN_ERROR_MSG));
 
         if (!queueToken.getUserId().equals(userId)) {
             throw new IllegalArgumentException("토큰을 취소할 권한이 없습니다");

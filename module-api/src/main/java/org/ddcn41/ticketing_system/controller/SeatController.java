@@ -26,6 +26,7 @@ import java.util.List;
 @RequestMapping("/v1")
 @RequiredArgsConstructor
 public class SeatController {
+    private static final String FORBIDDEN = "FORBIDDEN";
 
     private final SeatService seatService;
     private final UserService userService;
@@ -82,7 +83,7 @@ public class SeatController {
         if (!User.Role.ADMIN.equals(authenticatedUser.getRole()) &&
                 !authenticatedUser.getUserId().equals(request.getUserId())) {
             return ResponseEntity.status(403).body(
-                    ApiResponse.error("본인의 좌석만 잠금할 수 있습니다", "FORBIDDEN", null)
+                    ApiResponse.error("본인의 좌석만 잠금할 수 있습니다", FORBIDDEN, null)
             );
         }
 
@@ -134,7 +135,7 @@ public class SeatController {
         if (!User.Role.ADMIN.equals(authenticatedUser.getRole()) &&
                 !authenticatedUser.getUserId().equals(request.getUserId())) {
             return ResponseEntity.status(403).body(
-                    ApiResponse.error("본인의 좌석만 해제할 수 있습니다", "FORBIDDEN", false)
+                    ApiResponse.error("본인의 좌석만 해제할 수 있습니다", FORBIDDEN, false)
             );
         }
 
@@ -182,7 +183,7 @@ public class SeatController {
         if (!User.Role.ADMIN.equals(authenticatedUser.getRole()) &&
                 !authenticatedUser.getUserId().equals(request.getUserId())) {
             return ResponseEntity.status(403).body(
-                    ApiResponse.error("본인의 좌석만 확정할 수 있습니다", "FORBIDDEN", false)
+                    ApiResponse.error("본인의 좌석만 확정할 수 있습니다", FORBIDDEN, false)
             );
         }
 

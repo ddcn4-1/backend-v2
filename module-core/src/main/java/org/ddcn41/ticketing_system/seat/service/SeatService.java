@@ -32,6 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class SeatService {
+    private static final String USER_NOT_FOUND_MSG = "사용자를 찾을 수 없습니다: ";
+
+    private final SeatService self;
 
     private final ScheduleSeatRepository scheduleSeatRepository;
     private final SeatLockRepository seatLockRepository;
@@ -89,7 +92,7 @@ public class SeatService {
 
         // 2. 사용자 정보 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
 
         // 3. 좌석 존재 및 가용성 확인
         List<ScheduleSeat> seats = scheduleSeatRepository.findAllById(seatIds);
@@ -197,7 +200,7 @@ public class SeatService {
      */
     public boolean releaseSeats(List<Long> seatIds, String userId, String sessionId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
 
         boolean allReleased = true;
 
@@ -225,7 +228,7 @@ public class SeatService {
      */
     public boolean confirmSeats(List<Long> seatIds, String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
 
         List<ScheduleSeat> seats = scheduleSeatRepository.findAllById(seatIds);
 
@@ -304,7 +307,7 @@ public class SeatService {
      */
     public void releaseAllUserLocks(String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
 
         List<SeatLock> userLocks = seatLockRepository
                 .findByUserAndStatus(user, SeatLock.LockStatus.ACTIVE);
@@ -327,7 +330,7 @@ public class SeatService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
 
         for (ScheduleSeat seat : seats) {
             if (seat.getStatus() == ScheduleSeat.SeatStatus.AVAILABLE) {
@@ -413,12 +416,12 @@ public class SeatService {
     @Transactional(readOnly = true)
     public boolean canUserBookSeatsForSchedule(List<Long> seatIds, Long scheduleId, String userId) {
         // 1. 좌석들이 해당 스케줄에 속하는지 검증
-        if (!validateSeatsForSchedule(seatIds, scheduleId)) {
+        if (!self.validateSeatsForSchedule(seatIds, scheduleId)) {
             return false;
         }
 
         // 2. 사용자가 해당 좌석들을 예약할 수 있는지 검증
-        return areSeatsAvailableForUser(seatIds, userId);
+        return self.areSeatsAvailableForUser(seatIds, userId);
     }
 
     // === Private Helper Methods ===

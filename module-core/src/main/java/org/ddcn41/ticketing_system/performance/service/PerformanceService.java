@@ -21,12 +21,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class PerformanceService {
+    private static final String PERFORMANCE_ERROR_MSG = "Performance not found with id: ";
 
     private final PerformanceRepository performanceRepository;
     private final PerformanceScheduleRepository performanceScheduleRepository;
@@ -39,21 +39,21 @@ public class PerformanceService {
 
     public PerformanceResponse getPerformanceById(Long performanceId){
         return convertToPerformanceResponse(performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException("Performance not found with id: "+performanceId)));
+                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId)));
     }
 
     public List<PerformanceResponse> getAllPerformances() {
         return performanceRepository.findAllWithVenueAndSchedules()
                 .stream()
                 .map(this::convertToPerformanceResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<AdminPerformanceResponse> getAllAdminPerformances() {
         return performanceRepository.findAllWithVenueAndSchedules()
                 .stream()
                 .map(this::convertToAdminPerformanceResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<PerformanceResponse> searchPerformances(String name, String venue, String status) {
@@ -65,7 +65,6 @@ public class PerformanceService {
                 performanceStatus = Performance.PerformanceStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
                 // 잘못된 status 값인 경우 null로 처리 (모든 상태 조회)
-                performanceStatus = null;
             }
         }
 
@@ -73,7 +72,7 @@ public class PerformanceService {
                 name != null && !name.trim().isEmpty() ? name : null,
                 venue != null && !venue.trim().isEmpty() ? venue : null,
                 performanceStatus
-        ).stream().map(this::convertToPerformanceResponse).collect(Collectors.toList());
+        ).stream().map(this::convertToPerformanceResponse).toList();
     }
 
     public List<PerformanceSchedule> getPerformanceSchedules(Long performanceId) {
@@ -121,7 +120,7 @@ public class PerformanceService {
 
     public void deletePerformance(Long performanceId) {
         Performance performance = performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException("Performance not found with id: "+performanceId));
+                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId));
 
         deleteExistingImages(performance);
 
@@ -130,7 +129,7 @@ public class PerformanceService {
 
     public AdminPerformanceResponse updatePerformance(Long performanceId, PerformanceRequestDto updatePerformanceRequestDto) {
         Performance performance = performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException("Performance not found with id: "+performanceId));
+                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId));
 
         Venue venue = venueRepository.findById(updatePerformanceRequestDto.getVenueId())
                 .orElseThrow(() -> new EntityNotFoundException("venue not found with id: "+ updatePerformanceRequestDto.getVenueId()));
@@ -191,14 +190,14 @@ public class PerformanceService {
                                 getPerformance().
                                 getPerformanceId().
                                 equals(performanceId))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private PerformanceResponse convertToPerformanceResponse(Performance performance) {
         List<PerformanceResponse.ScheduleResponse> scheduleResponses = performance.getSchedules() != null
                 ? performance.getSchedules().stream()
                 .map(PerformanceResponse.ScheduleResponse::from)
-                .collect(Collectors.toList())
+                .toList()
                 : new ArrayList<>();
 
         String posterImageUrl = s3ImageService.generateDownloadPresignedUrl(performance.getPosterUrl(), 3);

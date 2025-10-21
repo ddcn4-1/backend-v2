@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
@@ -37,7 +36,7 @@ public class UserService {
     public List<UserResponseDto> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::convertToResponseDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // 유저 생성
@@ -162,7 +161,7 @@ public class UserService {
      */
     public String getUserRole(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
         return user.getRole().name();
     }
 
@@ -171,7 +170,7 @@ public class UserService {
      */
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
     }
 
     /**
@@ -197,7 +196,7 @@ public class UserService {
     @Transactional
     public User updateUserLoginTime(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
 
         user.setLastLogin(LocalDateTime.now());
         return userRepository.save(user);

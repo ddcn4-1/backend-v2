@@ -50,6 +50,8 @@ import static org.springframework.http.HttpStatus.*;
 @Service
 @RequiredArgsConstructor
 public class BookingService {
+    private static final String UNAUTHORIZED_MSG = "사용자 인증 실패";
+    private static final String NOT_FOUND_MSG = "예매를 찾을 수 없습니다";
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
 
@@ -66,7 +68,7 @@ public class BookingService {
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String username, CreateBookingRequestDto req) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "사용자 인증 실패"));
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
 
         PerformanceSchedule schedule = scheduleRepository.findById(req.getScheduleId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "스케줄을 찾을 수 없습니다"));
@@ -237,7 +239,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookingDetail200ResponseDto getBookingDetail(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "예매를 찾을 수 없습니다"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
         return toDetailDto(booking);
     }
 
@@ -247,10 +249,10 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookingDetail200ResponseDto getUserBookingDetail(String username, Long bookingId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "사용자 인증 실패"));
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "예매를 찾을 수 없습니다"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
 
         // 소유권 검증
         if (!booking.getUser().getUserId().equals(user.getUserId())) {
@@ -328,7 +330,7 @@ public class BookingService {
     @Transactional(rollbackFor = Exception.class)
     public CancelBooking200ResponseDto cancelBooking(Long bookingId, CancelBookingRequestDto req, String actorUsername) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "예매를 찾을 수 없습니다"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new ResponseStatusException(BAD_REQUEST, "이미 취소된 예매입니다");
@@ -372,7 +374,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookings200ResponseDto getUserBookings(String username, String status, int page, int limit) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "사용자 인증 실패"));
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
 
         PageRequest pr = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
 

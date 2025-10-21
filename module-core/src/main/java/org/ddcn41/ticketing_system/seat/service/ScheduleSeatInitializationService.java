@@ -18,6 +18,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ScheduleSeatInitializationService {
+    private final ScheduleSeatInitializationService self;
 
     private final PerformanceScheduleRepository scheduleRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
@@ -32,7 +33,7 @@ public class ScheduleSeatInitializationService {
         List<InitializeSeatsResponse> results = new ArrayList<>();
         for (PerformanceSchedule s : schedules) {
             try {
-                results.add(initialize(s.getScheduleId(), dryRun));
+                results.add(self.initialize(s.getScheduleId(), dryRun));
             } catch (RuntimeException ex) {
                 // 개별 스케줄 실패는 전체 중단 없이 계속 진행
                 results.add(InitializeSeatsResponse.builder()
