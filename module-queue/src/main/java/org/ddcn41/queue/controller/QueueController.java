@@ -27,6 +27,7 @@ import org.ddcn41.queue.dto.response.TokenIssueResponse;
 import org.ddcn41.queue.service.QueueService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -134,16 +135,19 @@ public class QueueController {
                     description = "공연을 찾을 수 없음",
                     content = @Content)
     })
+    // 그대로 유지
     public ResponseEntity<ApiResponse<QueueCheckResponse>> checkQueueRequirement(
             @Valid @RequestBody TokenRequest request,
-            Authentication authentication) {
+//            Authentication authentication) {
+            @Nullable Authentication authentication) {
 
-        // Authentication에서 직접 userId 추출
-        // JWT에 userId가 있다고 가정
-        String username = authentication.getName();
-        // TODO: JWT에서 userId 추출하는 로직 필요
-        // 임시로 username을 Long으로 변환 (실제로는 JWT claim에서 가져와야 함)
+
+//        String username = authentication.getName();
         Long userId = extractUserIdFromAuth(authentication);
+        if (userId == null) {
+            // 기존 동작 보존: 임시 기본값
+            userId = 1L;
+        }
 
         QueueCheckResponse response = queueService.getBookingToken(
                 request.getPerformanceId(),

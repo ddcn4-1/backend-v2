@@ -1,7 +1,5 @@
 package org.ddcn41.queue.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,102 +13,91 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    private volatile CognitoJwtValidatorLite cognito;
+
+    @Value("${cognito.enabled:true}")
+    private boolean cognitoEnabled;
+
+    @Value("${cognito.issuer:}")
+    private String issuer;
+
+    @Value("${cognito.jwks:}")
+    private String jwks;
+
+    @Value("${cognito.appClientId:}")
+    private String appClientId;
+
+    private CognitoJwtValidatorLite validator() throws Exception {
+        if (cognito == null) {
+            synchronized (this) {
+                if (cognito == null) {
+                    cognito = new CognitoJwtValidatorLite(issuer, jwks, appClientId);
+                }
+            }
+        }
+        return cognito;
+    }
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
 
-        // ⭐ 요청 정보 로깅
-        log.debug("=== JWT Filter 시작 ===");
-        log.debug("Request URI: {}", request.getRequestURI());
-        log.debug("Authorization Header: {}", request.getHeader("Authorization"));
+        String h = req.getHeader("Authorization");
+        if (h == null || !h.startsWith("Bearer ")) {
+            chain.doFilter(req, res);
+            return;
+        }
 
-        try {
-            String token = extractToken(request);
+        String token = extractToken(req);
+        if (token != null && cognitoEnabled) {
+            try {
+                //  변경 : JJWT -> CognitoLite
+                CognitoJwtValidatorLite.UserInfo info = validator().validateAccessToken(token);
 
-            if (token != null) {
-                log.debug("Token 추출 성공");
-
-                Claims claims = Jwts.parserBuilder()
-                        .setSigningKey(secret.getBytes())
-                        .build()
-                        .parseClaimsJws(token)
-                        .getBody();
-
-                String username = claims.getSubject();
-
-                // userId 추출
-                Object userIdObj = claims.get("userId");
-                Long userId = null;
-
-                if (userIdObj instanceof Integer) {
-                    userId = ((Integer) userIdObj).longValue();
-                } else if (userIdObj instanceof Long) {
-                    userId = (Long) userIdObj;
-                } else if (userIdObj != null) {
-                    userId = Long.valueOf(userIdObj.toString());
-                }
+                String username = info.getUsername();
+                if (!StringUtils.hasText(username)) username = info.getSub();
+                Long userId = info.getUserId(); // 커스텀 클레임 없으면 null
 
                 if (userId == null) {
-                    log.warn("JWT에 userId가 없습니다");
-                    filterChain.doFilter(request, response);
+                    chain.doFilter(req, res);
                     return;
                 }
 
-                log.info("JWT 인증 성공 - username: {}, userId: {}", username, userId);
+                List<SimpleGrantedAuthority> authorities =
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
-                // CustomUserDetails 생성
                 CustomUserDetails userDetails = new CustomUserDetails(
-                        username,
-                        "",
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
-                        userId
+                        username, "", authorities, userId
                 );
 
-                // Authentication 설정
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                SecurityContextHolder.getContext().setAuthentication(auth);
 
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("SecurityContext에 인증 정보 설정 완료");
-            } else {
-                log.debug("Token이 없습니다");
+            } catch (Exception e) {
+                log.error("JWT 인증 실패: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             }
-        } catch (Exception e) {
-            log.error("JWT 인증 실패: {}", e.getMessage(), e);
         }
 
-        filterChain.doFilter(request, response);
+        chain.doFilter(req, res);
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
+    private String extractToken(HttpServletRequest req) {
+        String h = req.getHeader("Authorization");
+        return (h != null && h.startsWith("Bearer ")) ? h.substring(7) : null;
     }
 }

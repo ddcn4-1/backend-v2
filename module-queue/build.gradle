@@ -34,6 +34,9 @@ dependencies {
     // Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
 
+    //Cognito
+    implementation("com.nimbusds:nimbus-jose-jwt:9.37")
+
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
