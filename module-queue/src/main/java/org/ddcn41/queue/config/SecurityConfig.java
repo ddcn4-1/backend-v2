@@ -20,7 +20,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(AbstractHttpConfigurer::disable)  //  CORS 비활성화
-
+                
                 .authorizeHttpRequests(auth -> auth
                         // Swagger UI 허용
                         .requestMatchers(
@@ -37,7 +37,6 @@ public class SecurityConfig {
                                 "/v1/queue/token/*/verify",
                                 "/v1/queue/token/*/use",
                                 "/v1/queue/release-session"
-
                         ).permitAll()  // 임시 모두 허용
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()

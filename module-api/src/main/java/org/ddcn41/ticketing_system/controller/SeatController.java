@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.seat.controller;
+package org.ddcn41.ticketing_system.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

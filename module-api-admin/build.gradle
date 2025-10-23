@@ -1,0 +1,83 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+dependencies {
+    implementation project(':module-auth')
+    implementation project(':module-common')
+    implementation project(':module-core')
+    implementation project(':module-metric')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    implementation 'com.amazonaws.serverless:aws-serverless-java-container-springboot3:2.0.3'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // PostgreSQL
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+bootJar {
+    enabled = true
+    mainClass = 'org.ddcn41.ticketing_system.TicketingAdminApplication'
+}
+jar {
+    enabled = false
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+task buildLambdaZip(type: Zip) {
+    archiveFileName = 'admin-api-lambda.zip'
+    destinationDirectory = file("$buildDir/distributions")
+
+    from(compileJava) {
+        into('')
+    }
+
+    from(processResources) {
+        into('')
+    }
+
+    from(configurations.runtimeClasspath) {
+        into('lib')
+    }
+}
+
+build.dependsOn buildLambdaZip
+
+ext {
+    set('springCloudVersion', "2024.0.2")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}

@@ -4,15 +4,16 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.*;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.Getter;
 
 import java.net.URL;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class CognitoJwtValidatorLite {
 
@@ -55,6 +56,7 @@ public class CognitoJwtValidatorLite {
                 Instant.now().isAfter(claims.getExpirationTime().toInstant())) {
             throw new IllegalArgumentException("Expired");
         }
+
         if (claims.getAudience() == null || !claims.getAudience().contains(appClientId)) {
             throw new IllegalArgumentException("Invalid aud");
         }

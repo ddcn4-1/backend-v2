@@ -1,5 +1,3 @@
-// module-queue/src/main/java/org/ddcn41/queue/config/JwtTokenProvider.java
-
 package org.ddcn41.queue.config;
 
 import io.jsonwebtoken.Claims;

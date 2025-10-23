@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Ticketing Admin API
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+    Runtime: java21
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        SPRING_PROFILES_ACTIVE: local
+        DB_HOST: postgres
+        REDIS_HOST: redis
+
+Resources:
+  TicketingAdminFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ticketing-admin-api
+      Handler: org.ddcn41.ticketing_system.handler.StreamLambdaHandler::handleRequest
+      CodeUri: build/distributions/admin-api-lambda.zip
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  TicketingAdminApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
