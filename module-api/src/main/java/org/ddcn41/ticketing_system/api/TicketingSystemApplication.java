@@ -1,0 +1,25 @@
+package org.ddcn41.ticketing_system.api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@SpringBootApplication(
+        scanBasePackages = "org.ddcn41.ticketing_system"
+)
+@EnableJpaRepositories(
+        basePackages = "org.ddcn41.ticketing_system"
+)
+@EntityScan(
+        basePackages = "org.ddcn41.ticketing_system"
+)
+@EnableFeignClients(
+        basePackages = "org.ddcn41.ticketing_system.common.client"
+)
+public class TicketingSystemApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(TicketingSystemApplication.class, args);
+    }
+}

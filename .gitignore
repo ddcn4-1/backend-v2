@@ -7,6 +7,9 @@ build/
 
 gradle/wrapper/gradle-wrapper.properties.lock
 
+# 인증서
+infra/nginx/certs/
+
 # Java 컴파일 파일
 *.class
 *.jar
@@ -60,6 +63,7 @@ application-dev.properties
 application-prod.properties
 application.yml
 application.properties
+application.yaml
 
 # 데이터베이스 파일
 *.db

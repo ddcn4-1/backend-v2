@@ -1,0 +1,25 @@
+// module-metric/build.gradle
+plugins {
+    id 'java-library'
+    id 'io.spring.dependency-management'
+    id 'java'
+}
+
+dependencies {
+    api project(':module-common')
+    // Spring Web + Jackson
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.test { useJUnitPlatform() }

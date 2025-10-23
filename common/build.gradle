@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+
+group = 'org.ddcn41'
+version = '0.0.1-SNAPSHOT'
+
+// Common은 실행 가능한 JAR가 아니므로
+bootJar {
+    enabled = false  // Spring Boot 실행 JAR 생성 안 함
+}
+
+jar {
+    enabled = true   // 일반 라이브러리 JAR 생성
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+
+}
+
+test {
+    useJUnitPlatform()
+}
