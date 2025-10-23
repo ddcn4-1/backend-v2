@@ -1,9 +1,10 @@
 package org.ddcn41.ticketing_system.performance.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.booking.entity.Booking;
 import org.ddcn41.ticketing_system.booking.repository.BookingRepository;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.dto.request.PerformanceRequestDto;
 import org.ddcn41.ticketing_system.performance.dto.response.AdminPerformanceResponse;
 import org.ddcn41.ticketing_system.performance.dto.response.PerformanceResponse;
@@ -26,8 +27,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional
 public class PerformanceService {
-    private static final String PERFORMANCE_ERROR_MSG = "Performance not found with id: ";
-
     private final PerformanceRepository performanceRepository;
     private final PerformanceScheduleRepository performanceScheduleRepository;
 
@@ -39,7 +38,7 @@ public class PerformanceService {
 
     public PerformanceResponse getPerformanceById(Long performanceId){
         return convertToPerformanceResponse(performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId)));
+                .orElseThrow(()-> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "performanceId: " + performanceId)));
     }
 
     public List<PerformanceResponse> getAllPerformances() {
@@ -76,13 +75,15 @@ public class PerformanceService {
     }
 
     public List<PerformanceSchedule> getPerformanceSchedules(Long performanceId) {
-        // TODO: 404 exception handling - 나중에 수정 예정
+        performanceRepository.findById(performanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "performanceId: " + performanceId));
+
         return performanceScheduleRepository.findByPerformance_PerformanceIdOrderByShowDatetimeAsc(performanceId);
     }
 
     public AdminPerformanceResponse createPerformance(PerformanceRequestDto createPerformanceRequestDto) {
         Venue venue = venueRepository.findById(createPerformanceRequestDto.getVenueId())
-                .orElseThrow(() -> new EntityNotFoundException("venue not found with id: "+ createPerformanceRequestDto.getVenueId()));
+                .orElseThrow(() -> new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + createPerformanceRequestDto.getVenueId()));
 
         Performance performance = Performance.builder()
                 .venue(venue)
@@ -120,7 +121,7 @@ public class PerformanceService {
 
     public void deletePerformance(Long performanceId) {
         Performance performance = performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId));
+                .orElseThrow(()-> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "performanceId: " + performanceId));
 
         deleteExistingImages(performance);
 
@@ -129,10 +130,10 @@ public class PerformanceService {
 
     public AdminPerformanceResponse updatePerformance(Long performanceId, PerformanceRequestDto updatePerformanceRequestDto) {
         Performance performance = performanceRepository.findById(performanceId)
-                .orElseThrow(()-> new EntityNotFoundException(PERFORMANCE_ERROR_MSG + performanceId));
+                .orElseThrow(()-> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "performanceId: " + performanceId));
 
         Venue venue = venueRepository.findById(updatePerformanceRequestDto.getVenueId())
-                .orElseThrow(() -> new EntityNotFoundException("venue not found with id: "+ updatePerformanceRequestDto.getVenueId()));
+                .orElseThrow(() -> new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + updatePerformanceRequestDto.getVenueId()));
 
         // 기존 이미지 삭제
         if (performance.getPosterUrl() != null && !updatePerformanceRequestDto.getPosterUrl().isEmpty() &&

@@ -3,6 +3,8 @@ package org.ddcn41.ticketing_system.performance.service;
 import io.awspring.cloud.s3.S3Operations;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.dto.request.PresignedUrlRequest;
 import org.ddcn41.ticketing_system.performance.dto.response.PresignedUrlResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,7 +76,7 @@ public class S3Service {
             return s3Presigner.presignGetObject(getPresignRequest).url().toString();
 
         } catch (Exception e) {
-            throw new RuntimeException("이미지 URL 생성에 실패했습니다." + e.toString());
+            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR, "이미지 URL 생성에 실패했습니다." + e.toString());
         }
     }
 
@@ -83,7 +85,7 @@ public class S3Service {
      */
     public String uploadImage(MultipartFile file, String folder) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+            throw new BusinessException(ErrorCode.FILE_REQUIRED);
         }
 
         // 파일명 생성: folder/날짜/UUID_원본파일명
@@ -100,7 +102,7 @@ public class S3Service {
             return imageUrl;
 
         } catch (IOException e) {
-            throw new RuntimeException("이미지 업로드에 실패했습니다.", e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 

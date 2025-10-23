@@ -1,6 +1,8 @@
 package org.ddcn41.ticketing_system.seat.service;
 
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
 import org.ddcn41.ticketing_system.seat.dto.SeatDto;
 import org.ddcn41.ticketing_system.seat.dto.response.SeatAvailabilityResponse;
@@ -11,6 +13,7 @@ import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.ddcn41.ticketing_system.seat.repository.SeatLockRepository;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +35,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class SeatService {
-    private static final String USER_NOT_FOUND_MSG = "사용자를 찾을 수 없습니다: ";
-
-    private final SeatService self;
+    private final ObjectProvider<SeatService> seatServiceProvider;
 
     private final ScheduleSeatRepository scheduleSeatRepository;
     private final SeatLockRepository seatLockRepository;
@@ -54,7 +55,7 @@ public class SeatService {
 
         List<SeatDto> seatDtos = seats.stream()
                 .map(this::convertToSeatDto)
-                .collect(Collectors.toList());
+                .toList();
 
         long availableCount = seats.stream()
                 .filter(seat -> seat.getStatus() == ScheduleSeat.SeatStatus.AVAILABLE)
@@ -92,7 +93,7 @@ public class SeatService {
 
         // 2. 사용자 정보 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         // 3. 좌석 존재 및 가용성 확인
         List<ScheduleSeat> seats = scheduleSeatRepository.findAllById(seatIds);
@@ -181,17 +182,21 @@ public class SeatService {
             if (scheduleIdForCounter != null && newlyLocked > 0) {
                 int affected = scheduleRepository.decrementAvailableSeats(scheduleIdForCounter, newlyLocked);
                 if (affected == 0) {
-                    throw new RuntimeException("잔여 좌석 수 갱신 실패: 이미 매진된 스케줄입니다.");
+                    throw new BusinessException(ErrorCode.SCHEDULE_SOLD_OUT);
                 }
                 scheduleRepository.refreshScheduleStatus(scheduleIdForCounter);
             }
 
             return SeatLockResponse.success("좌석 락 성공", expiresAt);
 
+        } catch (BusinessException e) {
+            // 비즈니스 예외는 그대로 전파
+            rollbackRedisLocks(lockKeys, lockValue);
+            throw e;
         } catch (Exception e) {
             // 실패 시 Redis 락 정리
             rollbackRedisLocks(lockKeys, lockValue);
-            throw new RuntimeException("좌석 락 처리 중 오류 발생", e);
+            throw new BusinessException(ErrorCode.SEAT_LOCK_FAILED);
         }
     }
 
@@ -200,7 +205,7 @@ public class SeatService {
      */
     public boolean releaseSeats(List<Long> seatIds, String userId, String sessionId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         boolean allReleased = true;
 
@@ -228,7 +233,7 @@ public class SeatService {
      */
     public boolean confirmSeats(List<Long> seatIds, String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         List<ScheduleSeat> seats = scheduleSeatRepository.findAllById(seatIds);
 
@@ -307,7 +312,7 @@ public class SeatService {
      */
     public void releaseAllUserLocks(String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         List<SeatLock> userLocks = seatLockRepository
                 .findByUserAndStatus(user, SeatLock.LockStatus.ACTIVE);
@@ -330,7 +335,7 @@ public class SeatService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND_MSG + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         for (ScheduleSeat seat : seats) {
             if (seat.getStatus() == ScheduleSeat.SeatStatus.AVAILABLE) {
@@ -363,7 +368,8 @@ public class SeatService {
 
     /**
      * 특정 좌석들이 지정된 스케줄에 속하는지 검증
-     * @param seatIds 검증할 좌석 ID 목록
+     *
+     * @param seatIds    검증할 좌석 ID 목록
      * @param scheduleId 스케줄 ID
      * @return 모든 좌석이 해당 스케줄에 속하면 true, 아니면 false
      */
@@ -383,6 +389,7 @@ public class SeatService {
 
     /**
      * 좌석들이 동일한 스케줄에 속하는지 검증 (cross-schedule 공격 방지)
+     *
      * @param seatIds 검증할 좌석 ID 목록
      * @return 모든 좌석이 동일한 스케줄에 속하면 해당 스케줄 ID, 아니면 null
      */
@@ -408,13 +415,16 @@ public class SeatService {
 
     /**
      * 사용자가 특정 스케줄의 좌석들을 예약할 수 있는지 종합 검증
-     * @param seatIds 좌석 ID 목록
+     *
+     * @param seatIds    좌석 ID 목록
      * @param scheduleId 스케줄 ID
-     * @param userId 사용자 ID
+     * @param userId     사용자 ID
      * @return 예약 가능하면 true
      */
     @Transactional(readOnly = true)
     public boolean canUserBookSeatsForSchedule(List<Long> seatIds, Long scheduleId, String userId) {
+        SeatService self = seatServiceProvider.getObject();
+
         // 1. 좌석들이 해당 스케줄에 속하는지 검증
         if (!self.validateSeatsForSchedule(seatIds, scheduleId)) {
             return false;
@@ -454,7 +464,7 @@ public class SeatService {
             redisTemplate.delete(lockKey);
 
         } catch (Exception e) {
-            throw new RuntimeException("좌석 락 해제 중 오류 발생", e);
+            throw new BusinessException(ErrorCode.SEAT_LOCK_CANCEL_FAILED);
         }
     }
 

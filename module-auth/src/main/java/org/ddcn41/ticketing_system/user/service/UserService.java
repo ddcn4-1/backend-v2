@@ -1,6 +1,8 @@
 package org.ddcn41.ticketing_system.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.user.dto.UserCreateRequestDto;
 import org.ddcn41.ticketing_system.user.dto.UserResponseDto;
 import org.ddcn41.ticketing_system.user.entity.User;
@@ -95,10 +97,10 @@ public class UserService {
 
         } catch (UsernameExistsException e) {
             log.error("Username already exists: {}", userCreateRequestDto.getUsername());
-            throw new RuntimeException("이미 존재하는 사용자명입니다.", e);
+            throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
         } catch (CognitoIdentityProviderException e) {
             log.error("Cognito Create error: {}", e.awsErrorDetails().errorMessage());
-            throw new RuntimeException("Cognito 사용자 생성 실패: " + e.awsErrorDetails().errorMessage(), e);
+            throw new BusinessException(ErrorCode.COGNITO_USER_CREATE_FAILED, e.awsErrorDetails().errorMessage());
         }
     }
 
@@ -107,7 +109,7 @@ public class UserService {
     public void deleteUser(String userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "userId: " + userId));
 
         try {
             // 1. Cognito에서 삭제
@@ -127,7 +129,7 @@ public class UserService {
             userRepository.deleteById(userId);
         } catch (CognitoIdentityProviderException e) {
             log.error("Cognito Delete error: {}", e.awsErrorDetails().errorMessage());
-            throw new RuntimeException("Cognito 사용자 삭제 실패: " + e.awsErrorDetails().errorMessage(), e);
+            throw new BusinessException(ErrorCode.COGNITO_USER_DELETE_FAILED, e.awsErrorDetails().errorMessage());
         }
     }
 
@@ -147,11 +149,11 @@ public class UserService {
         if (usernameOrEmail.contains("@")) {
             // 이메일로 사용자 찾기
             User user = userRepository.findByEmail(usernameOrEmail)
-                    .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다: " + usernameOrEmail));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "usernameOrEmail: " + usernameOrEmail));
             return user.getUsername();
         } else {
             User user = userRepository.findByUsername(usernameOrEmail)
-                    .orElseThrow(() -> new UsernameNotFoundException("해당 사용자명을 찾을 수 없습니다: " + usernameOrEmail));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "usernameOrEmail: " + usernameOrEmail));
             return user.getUsername();
         }
     }
@@ -161,7 +163,7 @@ public class UserService {
      */
     public String getUserRole(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "username: " + username));
         return user.getRole().name();
     }
 
@@ -170,7 +172,7 @@ public class UserService {
      */
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "username: " + username));
     }
 
     /**
@@ -178,7 +180,7 @@ public class UserService {
      */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다: " + email));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "email: " + email));
     }
 
     private UserResponseDto convertToResponseDto(User user) {
@@ -196,7 +198,7 @@ public class UserService {
     @Transactional
     public User updateUserLoginTime(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_MSG + username));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "username: " + username));
 
         user.setLastLogin(LocalDateTime.now());
         return userRepository.save(user);

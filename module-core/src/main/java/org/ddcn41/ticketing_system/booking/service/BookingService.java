@@ -21,6 +21,8 @@ import org.ddcn41.ticketing_system.common.client.QueueClient;
 import org.ddcn41.ticketing_system.common.dto.ApiResponse;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyResponse;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
@@ -35,7 +37,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -45,13 +46,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.*;
-
 @Service
 @RequiredArgsConstructor
 public class BookingService {
-    private static final String UNAUTHORIZED_MSG = "사용자 인증 실패";
-    private static final String NOT_FOUND_MSG = "예매를 찾을 수 없습니다";
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
 
@@ -68,10 +65,10 @@ public class BookingService {
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String username, CreateBookingRequestDto req) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
         PerformanceSchedule schedule = scheduleRepository.findById(req.getScheduleId())
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "스케줄을 찾을 수 없습니다"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
 
         // 대기열 토큰 검증 추가 (기존 seat_map_json 로직 이전에)
         validateQueueTokenIfRequired(req, user, schedule);
@@ -84,7 +81,7 @@ public class BookingService {
             String seatMapJson = schedule.getPerformance().getVenue().getSeatMapJson();
             root = om.readTree(seatMapJson == null ? "{}" : seatMapJson);
         } catch (Exception e) {
-            throw new ResponseStatusException(BAD_REQUEST, "좌석 맵 정보가 올바르지 않습니다");
+            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP);
         }
 
         JsonNode sections = root.path("sections");
@@ -99,27 +96,27 @@ public class BookingService {
 
             boolean validByJson = validateBySeatMap(sections, grade, zone, rowLabel, colNum);
             if (!validByJson) {
-                throw new ResponseStatusException(BAD_REQUEST, String.format("유효하지 않은 좌석 지정: %s/%s-%s%s", grade, zone, rowLabel, colNum));
+                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, String.format("유효하지 않은 좌석 지정: %s/%s-%s%s", grade, zone, rowLabel, colNum));
             }
 
             ScheduleSeat seat = scheduleSeatRepository.findBySchedule_ScheduleIdAndZoneAndRowLabelAndColNum(
                     schedule.getScheduleId(), zone, rowLabel, colNum);
             if (seat == null) {
-                throw new ResponseStatusException(BAD_REQUEST, String.format("존재하지 않는 좌석: %s/%s-%s%s", grade, zone, rowLabel, colNum));
+                throw new BusinessException(ErrorCode.SEAT_NOT_FOUND, String.format("존재하지 않는 좌석: %s/%s-%s%s", grade, zone, rowLabel, colNum));
             }
             if (!safeUpper(seat.getGrade()).equals(grade) || !safeUpper(seat.getZone()).equals(zone)) {
-                throw new ResponseStatusException(BAD_REQUEST, "좌석의 등급/구역 정보가 요청과 일치하지 않습니다");
+                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, "좌석의 등급/구역 정보가 요청과 일치하지 않습니다");
             }
             BigDecimal price = priceByGrade(pricingNode, grade);
             if (price != null) {
                 seat.setPrice(price);
             }
             if (seat.getStatus() != ScheduleSeat.SeatStatus.AVAILABLE) {
-                throw new ResponseStatusException(BAD_REQUEST, "예약 불가능한 좌석이 포함되어 있습니다: " + seat.getSeatId());
+                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, "예약 불가능한 좌석이 포함되어 있습니다: " + seat.getSeatId());
             }
             seat.setStatus(ScheduleSeat.SeatStatus.LOCKED);
             return seat;
-        }).collect(Collectors.toList());
+        }).toList();
 
         // 낙관적 락 검증을 커밋 전에 강제 수행 (flush 시 버전 충돌 발생 가능)
         // NOTE: 커밋 시 자동 flush로도 충분하면 이 flush는 생략 가능
@@ -130,12 +127,12 @@ public class BookingService {
             if (!requestedSeats.isEmpty()) {
                 int affected = scheduleRepository.decrementAvailableSeats(req.getScheduleId(), requestedSeats.size());
                 if (affected == 0) {
-                    throw new ResponseStatusException(BAD_REQUEST, "잔여 좌석 수가 부족합니다. 다시 시도해주세요.");
+                    throw new BusinessException(ErrorCode.INSUFFICIENT_SEATS);
                 }
                 scheduleRepository.refreshScheduleStatus(req.getScheduleId());
             }
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
-            throw new ResponseStatusException(BAD_REQUEST, "다른 사용자가 먼저 예약한 좌석이 있습니다. 다시 시도해주세요.");
+            throw new BusinessException(ErrorCode.SEAT_ALREADY_BOOKED);
         }
 
         // 이미 검증된 requestedSeats 사용 (중복 조회 방지)
@@ -178,7 +175,7 @@ public class BookingService {
                         .seatPrice(seat.getPrice())
                         .build())
                 .map(bookingSeatRepository::save)
-                .collect(Collectors.toList());
+                .toList();
 
         saved.setBookingSeats(savedSeats);
 
@@ -186,7 +183,7 @@ public class BookingService {
         seats.forEach(seat -> seat.setStatus(ScheduleSeat.SeatStatus.BOOKED));
         scheduleSeatRepository.saveAll(seats);
 
-        List<Long> seatIds = seats.stream().map(ScheduleSeat::getSeatId).collect(Collectors.toList());
+        List<Long> seatIds = seats.stream().map(ScheduleSeat::getSeatId).toList();
         bookingAuditService.logBookingCreated(user, saved, seatIds);
 
         return toCreateResponse(saved);
@@ -213,23 +210,19 @@ public class BookingService {
                         queueClient.verifyToken(req.getQueueToken(), verifyRequest);
 
                 if (response.getData() == null || !response.getData().isValid()) {
-                    throw new ResponseStatusException(BAD_REQUEST,
-                            "유효하지 않은 대기열 토큰입니다. " +
-                                    (response.getData() != null ? response.getData().getReason() : ""));
+                    throw new BusinessException(ErrorCode.QUEUE_TOKEN_INVALID,
+                            response.getData() != null ? response.getData().getReason() : "");
                 }
 
             } catch (feign.FeignException e) {
                 log.error("Queue 서비스 호출 실패: {}", e.getMessage());
-                throw new ResponseStatusException(SERVICE_UNAVAILABLE,
-                        "대기열 서비스에 일시적으로 접근할 수 없습니다. 잠시 후 다시 시도해주세요.");
+                throw new BusinessException(ErrorCode.QUEUE_SERVICE_UNAVAILABLE);
             } catch (Exception e) {
                 log.warn("토큰 검증 중 오류 발생: {}", e.getMessage());
-                throw new ResponseStatusException(BAD_REQUEST,
-                        "토큰 검증 중 오류가 발생했습니다. 다시 시도해주세요.");
+                throw new BusinessException(ErrorCode.QUEUE_TOKEN_INVALID);
             }
         } else {
-            throw new ResponseStatusException(BAD_REQUEST,
-                    "대기열 토큰이 필요합니다. 대기열에 참여해주세요.");
+            throw new BusinessException(ErrorCode.QUEUE_TOKEN_REQUIRED);
         }
     }
 
@@ -239,7 +232,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookingDetail200ResponseDto getBookingDetail(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
         return toDetailDto(booking);
     }
 
@@ -249,14 +242,14 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookingDetail200ResponseDto getUserBookingDetail(String username, Long bookingId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
 
         // 소유권 검증
         if (!booking.getUser().getUserId().equals(user.getUserId())) {
-            throw new ResponseStatusException(FORBIDDEN, "해당 예매에 접근할 권한이 없습니다");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "해당 예매에 접근할 권한이 없습니다");
         }
 
         return toDetailDto(booking);
@@ -275,7 +268,7 @@ public class BookingService {
             try {
                 bs = BookingStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(BAD_REQUEST, "유효하지 않은 상태 값");
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 상태 값");
             }
             result = bookingRepository.findAllByStatusWithDetails(bs, pr);
         } else {
@@ -284,7 +277,7 @@ public class BookingService {
 
         List<BookingDto> items = result.getContent().stream()
                 .map(this::toListDtoFromProjection)
-                .collect(Collectors.toList());
+                .toList();
 
         return GetBookings200ResponseDto.builder()
                 .bookings(items)
@@ -306,7 +299,7 @@ public class BookingService {
             try {
                 bs = BookingStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(BAD_REQUEST, "유효하지 않은 상태 값");
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 상태 값");
             }
             result = bookingRepository.findAllByStatus(bs, pr);
         } else {
@@ -315,7 +308,7 @@ public class BookingService {
 
         List<BookingDto> items = result.getContent().stream()
                 .map(this::toListDto)
-                .collect(Collectors.toList());
+                .toList();
 
         return GetBookings200ResponseDto.builder()
                 .bookings(items)
@@ -330,21 +323,21 @@ public class BookingService {
     @Transactional(rollbackFor = Exception.class)
     public CancelBooking200ResponseDto cancelBooking(Long bookingId, CancelBookingRequestDto req, String actorUsername) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, NOT_FOUND_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new ResponseStatusException(BAD_REQUEST, "이미 취소된 예매입니다");
+            throw new BusinessException(ErrorCode.BOOKING_ALREADY_CANCELLED);
         }
 
         // 좌석 취소 (SeatService에 위임)
         List<Long> seatIds = booking.getBookingSeats().stream()
                 .map(bs -> bs.getSeat().getSeatId())
-                .collect(Collectors.toList());
+                .toList();
 
         boolean cancelled = seatService.cancelSeats(seatIds);
 
         if (!cancelled) {
-            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "좌석 취소 실패");
+            throw new BusinessException(ErrorCode.SEAT_CANCEL_FAILED);
         }
 
         // 예약 상태 변경
@@ -374,7 +367,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public GetBookings200ResponseDto getUserBookings(String username, String status, int page, int limit) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED_MSG));
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
         PageRequest pr = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
 
@@ -384,7 +377,7 @@ public class BookingService {
             try {
                 bs = BookingStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(BAD_REQUEST, "유효하지 않은 상태 값");
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 상태 값");
             }
             result = bookingRepository.findByUserAndStatus(user, bs, pr);
         } else {
@@ -393,7 +386,7 @@ public class BookingService {
 
         List<BookingDto> items = result.getContent().stream()
                 .map(this::toListDto)
-                .collect(Collectors.toList());
+                .toList();
 
         return GetBookings200ResponseDto.builder()
                 .bookings(items)
@@ -457,7 +450,7 @@ public class BookingService {
                 .status(b.getStatus() != null ? b.getStatus().name() : null)
                 .expiresAt(odt(b.getExpiresAt()))
                 .bookedAt(odt(b.getBookedAt()))
-                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).collect(Collectors.toList()))
+                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).toList())
                 .build();
     }
 
@@ -645,7 +638,7 @@ public class BookingService {
         for (int i = 0; i < s.length(); i++) {
             char ch = s.charAt(i);
             if (ch < 'A' || ch > 'Z') {
-                throw new IllegalArgumentException("Invalid row label: " + s);
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid row label: " + s);
             }
             value = value * 26 + (ch - 'A' + 1);
         }

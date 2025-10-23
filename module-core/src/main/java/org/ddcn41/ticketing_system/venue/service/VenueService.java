@@ -1,6 +1,8 @@
 package org.ddcn41.ticketing_system.venue.service;
 
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.venue.dto.VenueDto;
 import org.ddcn41.ticketing_system.venue.entity.Venue;
 import org.ddcn41.ticketing_system.venue.repository.VenueRepository;
@@ -13,9 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class VenueService {
-
-    private static final String VENUE_NOT_FOUND_MSG = "Venue not found with id: ";
-
     private final VenueRepository venueRepository;
 
     // 모든 공연장 조회
@@ -28,7 +27,7 @@ public class VenueService {
     // 공연장 ID로 조회
     public VenueDto getVenueById(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + venueId));
         return convertToDto(venue);
     }
 
@@ -51,7 +50,7 @@ public class VenueService {
     @Transactional
     public VenueDto updateVenue(Long venueId, VenueDto venueDto) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + venueId));
 
         venue.setVenueName(venueDto.getVenueName());
         venue.setAddress(venueDto.getAddress());
@@ -67,7 +66,7 @@ public class VenueService {
     @Transactional
     public void deleteVenue(Long venueId) {
         if (!venueRepository.existsById(venueId)) {
-            throw new RuntimeException(VENUE_NOT_FOUND_MSG + venueId);
+            throw new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + venueId);
         }
         venueRepository.deleteById(venueId);
     }
@@ -75,7 +74,7 @@ public class VenueService {
     // 공연장 좌석 배치도 JSON 조회
     public String getVenueSeatMap(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException(VENUE_NOT_FOUND_MSG + venueId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.VENUE_NOT_FOUND, "venueId: " + venueId));
         return venue.getSeatMapJson();
     }
 
