@@ -360,35 +360,54 @@ public class QueueController {
             throw new RuntimeException("userId를 추출할 수 없습니다", e);
         }
     }*/
-    // QueueController.java의 extractUserIdFromAuth 수정
-    private Long extractUserIdFromAuth(Authentication authentication) {
-        if (authentication == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다");
+    @SuppressWarnings("unchecked")
+    private Long extractUserIdFromAuth(Authentication auth) {
+        if (auth == null) return null;
+
+        Object principal = auth.getPrincipal();
+
+        // 1) 기존처럼 CustomUserDetails에 userId가 있으면 그대로 사용
+        try {
+            if (principal != null && principal.getClass().getSimpleName().equals("CustomUserDetails")) {
+
+                var m = principal.getClass().getMethod("getUserId");
+                Object v = m.invoke(principal);
+                Long id = toLong(v);
+                if (id != null) return id;
+            }
+        } catch (Exception ignore) { /* 메서드 없거나 에러면 다음 단계 */ }
+
+        // 2) principal이 클레임 맵이면: userId -> sub 순으로 시도
+        if (principal instanceof java.util.Map<?, ?> map) {
+            Object uid = map.get("userId");
+            Long id = toLong(uid);
+            if (id != null) return id;
+
+            // Cognito 기본 식별자 (UUID 문자열)
+            Object sub = map.get("sub");
+            // TODO: sub -> 내부 userId 매핑이 있다면 여기서 변환
+            // 현재는 최소 수정 원칙으로 null 반환 (아래 단계로 폴백)
         }
 
-        Object principal = authentication.getPrincipal();
-
-        // 1. CustomUserDetails인 경우
-        if (principal instanceof CustomUserDetails) {
-            return ((CustomUserDetails) principal).getUserId();
+        // 3) name이 숫자면 그대로 사용 (기존 username이 숫자인 경우 대비)
+        String name = auth.getName();
+        if (name != null && name.chars().allMatch(Character::isDigit)) {
+            try {
+                return Long.valueOf(name);
+            } catch (NumberFormatException ignore) {
+            }
         }
 
-        // 2. Long 타입인 경우 (JwtAuthFilter에서 userId를 직접 넣은 경우)
-        if (principal instanceof Long) {
-            return (Long) principal;
-        }
+        // 4) 없음
+        return null;
+    }
 
-        // 3. String 타입인 경우 (username)
-        if (principal instanceof String) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "userId를 포함한 JWT를 사용하세요"
-            );
+    private Long toLong(Object v) {
+        if (v == null) return null;
+        try {
+            return Long.valueOf(String.valueOf(v));
+        } catch (Exception e) {
+            return null;
         }
-
-        throw new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "사용자 ID를 추출할 수 없습니다. Principal type: " + principal.getClass()
-        );
     }
 }
