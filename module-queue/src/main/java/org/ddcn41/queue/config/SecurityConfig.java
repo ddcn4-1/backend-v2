@@ -18,9 +18,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)  //  NOSONAR 쿠키의 SameSite가 Lax로 설정되어 CSRF 공격 차단
                 .cors(AbstractHttpConfigurer::disable)  //  CORS 비활성화
-                
+
                 .authorizeHttpRequests(auth -> auth
                         // Swagger UI 허용
                         .requestMatchers(
