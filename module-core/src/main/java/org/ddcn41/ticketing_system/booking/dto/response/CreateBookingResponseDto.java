@@ -17,7 +17,7 @@ import java.util.List;
 public class CreateBookingResponseDto {
     private Long bookingId;
     private String bookingNumber;
-    private Long userId;
+    private String userId;
     private Long scheduleId;
     private Integer seatCount;
     private Double totalAmount;

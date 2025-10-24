@@ -8,7 +8,7 @@ public interface BookingProjection {
     String getBookingNumber();
     
     // User
-    Long getUserId();
+    String getUserId();
     String getUserName();
     String getUserPhone();
     

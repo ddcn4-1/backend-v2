@@ -83,7 +83,7 @@ public class SeatService {
     /**
      * 좌석 락 시도
      */
-    public SeatLockResponse lockSeats(List<Long> seatIds, Long userId, String sessionId) {
+    public SeatLockResponse lockSeats(List<Long> seatIds, String userId, String sessionId) {
         // 1. 만료된 락 정리
         cleanupExpiredLocks();
 
@@ -195,7 +195,7 @@ public class SeatService {
     /**
      * 좌석 락 해제
      */
-    public boolean releaseSeats(List<Long> seatIds, Long userId, String sessionId) {
+    public boolean releaseSeats(List<Long> seatIds, String userId, String sessionId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
@@ -223,7 +223,7 @@ public class SeatService {
     /**
      * 좌석 예약 확정 (결제 완료 후 호출)
      */
-    public boolean confirmSeats(List<Long> seatIds, Long userId) {
+    public boolean confirmSeats(List<Long> seatIds, String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
@@ -302,7 +302,7 @@ public class SeatService {
     /**
      * 사용자의 모든 활성 락 해제
      */
-    public void releaseAllUserLocks(Long userId) {
+    public void releaseAllUserLocks(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
@@ -319,7 +319,7 @@ public class SeatService {
      * (자신이 락한 좌석은 예매 가능으로 판단)
      */
     @Transactional(readOnly = true)
-    public boolean areSeatsAvailableForUser(List<Long> seatIds, Long userId) {
+    public boolean areSeatsAvailableForUser(List<Long> seatIds, String userId) {
         List<ScheduleSeat> seats = scheduleSeatRepository.findAllById(seatIds);
 
         if (seats.size() != seatIds.size()) {
@@ -411,7 +411,7 @@ public class SeatService {
      * @return 예약 가능하면 true
      */
     @Transactional(readOnly = true)
-    public boolean canUserBookSeatsForSchedule(List<Long> seatIds, Long scheduleId, Long userId) {
+    public boolean canUserBookSeatsForSchedule(List<Long> seatIds, Long scheduleId, String userId) {
         // 1. 좌석들이 해당 스케줄에 속하는지 검증
         if (!validateSeatsForSchedule(seatIds, scheduleId)) {
             return false;

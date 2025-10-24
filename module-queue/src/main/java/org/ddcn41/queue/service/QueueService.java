@@ -51,7 +51,7 @@ public class QueueService {
     /**
      * 대기열 생성 시 직접 입장 세션 추적용
      */
-    public QueueCheckResponse getBookingToken(Long performanceId, Long scheduleId, Long userId) {
+    public QueueCheckResponse getBookingToken(Long performanceId, Long scheduleId, String userId) {
         String activeTokensKey = ACTIVE_TOKENS_KEY_PREFIX + performanceId;
 
         synchronized (queueLock) {
@@ -135,7 +135,7 @@ public class QueueService {
     }
 
     // ACTIVE 토큰 생성 (Entity 없이)
-    private QueueToken createActiveToken(String tokenString, Long userId, Long performanceId) {
+    private QueueToken createActiveToken(String tokenString, String userId, Long performanceId) {
         QueueToken token = QueueToken.builder()
                 .token(tokenString)
                 .userId(userId)
@@ -152,7 +152,7 @@ public class QueueService {
     }
 
     // WAITING 토큰 생성 (Entity 없이)
-    private QueueToken createWaitingToken(String tokenString, Long userId, Long performanceId) {
+    private QueueToken createWaitingToken(String tokenString, String userId, Long performanceId) {
         QueueToken token = QueueToken.builder()
                 .token(tokenString)
                 .userId(userId)
@@ -170,7 +170,7 @@ public class QueueService {
     /**
      * 대기열 토큰 발급 - Redis 기반
      */
-    public TokenIssueResponse issueQueueToken(Long userId, Long performanceId) {
+    public TokenIssueResponse issueQueueToken(String userId, Long performanceId) {
         // Entity 조회 제거
 
         // 기존 토큰 확인
@@ -258,7 +258,7 @@ public class QueueService {
     /**
      * 토큰 활성화
      */
-    public QueueStatusResponse activateToken(String token, Long userId, Long performanceId, Long scheduleId) {
+    public QueueStatusResponse activateToken(String token, String userId, Long performanceId, Long scheduleId) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "토큰을 찾을 수 없습니다"));
 
@@ -431,7 +431,7 @@ public class QueueService {
      * 세션 해제 (synchronized 버전)
      */
     @Transactional
-    public void releaseSession(Long userId, Long performanceId, Long scheduleId) {
+    public void releaseSession(String userId, Long performanceId, Long scheduleId) {
         String heartbeatKey = HEARTBEAT_KEY_PREFIX + userId + ":" + performanceId + ":" + scheduleId;
         String activeTokensKey = ACTIVE_TOKENS_KEY_PREFIX + performanceId;
 
@@ -518,7 +518,7 @@ public class QueueService {
     /**
      * Heartbeat 시작
      */
-    private void startHeartbeat(Long userId, Long performanceId, Long scheduleId) {
+    private void startHeartbeat(String userId, Long performanceId, Long scheduleId) {
         String heartbeatKey = HEARTBEAT_KEY_PREFIX + userId + ":" + performanceId + ":" + scheduleId;
         redisTemplate.opsForValue().set(heartbeatKey, LocalDateTime.now().toString(),
                 Duration.ofSeconds(maxInactiveSeconds));
@@ -528,7 +528,7 @@ public class QueueService {
     /**
      * Heartbeat 갱신
      */
-    public void updateHeartbeat(Long userId, Long performanceId, Long scheduleId) {
+    public void updateHeartbeat(String userId, Long performanceId, Long scheduleId) {
         String heartbeatKey = HEARTBEAT_KEY_PREFIX + userId + ":" + performanceId + ":" + scheduleId;
         redisTemplate.opsForValue().set(heartbeatKey, LocalDateTime.now().toString(),
                 Duration.ofSeconds(maxInactiveSeconds));
@@ -574,7 +574,7 @@ public class QueueService {
         try {
             String[] parts = heartbeatKey.replace(HEARTBEAT_KEY_PREFIX, "").split(":");
             if (parts.length >= 3) {
-                Long userId = Long.parseLong(parts[0]);
+                String userId = parts[0];
                 Long performanceId = Long.parseLong(parts[1]);
                 Long scheduleId = Long.parseLong(parts[2]);
 
@@ -711,7 +711,7 @@ public class QueueService {
                 .orElseThrow(() -> new IllegalArgumentException("토큰을 찾을 수 없습니다: " + token));
     }
 
-    public void cancelToken(String token, Long userId) {
+    public void cancelToken(String token, String userId) {
         QueueToken queueToken = queueTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("토큰을 찾을 수 없습니다"));
 
@@ -736,7 +736,7 @@ public class QueueService {
     }
 
     @Transactional(readOnly = true)
-    public List<QueueStatusResponse> getUserActiveTokens(Long userId) {
+    public List<QueueStatusResponse> getUserActiveTokens(String userId) {
         List<QueueToken> tokens = queueTokenRepository.findActiveTokensByUserId(userId);
         return tokens.stream()
                 .map(token -> QueueStatusResponse.builder()

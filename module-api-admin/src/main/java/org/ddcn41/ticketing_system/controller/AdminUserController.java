@@ -72,7 +72,7 @@ public class AdminUserController {
     })
     public ResponseEntity<UserResponseDto> deleteUser(
             @Parameter(description = "User ID", required = true)
-            @PathVariable Long userId) {
+            @PathVariable String userId) {
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }

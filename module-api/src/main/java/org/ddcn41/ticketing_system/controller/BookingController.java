@@ -94,9 +94,9 @@ public class BookingController {
             log.error("[CONTROLLER] Authentication check failed - returning 401");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        String username = auth.getName();
-        log.info("[CONTROLLER] Processing bookings for user: {}", username);
-        return ResponseEntity.ok(bookingService.getUserBookings(username, status, page, limit));
+        String userId = auth.getName();
+        log.info("[CONTROLLER] Processing bookings for user: {}", userId);
+        return ResponseEntity.ok(bookingService.getUserBookings(userId, status, page, limit));
     }
 
     @PatchMapping("/{bookingId}/cancel")

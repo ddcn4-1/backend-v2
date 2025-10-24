@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.common.service;
+package org.ddcn41.ticketing_system.common.authorization.interfaces;
 
 public interface JwtTokenValidator {
     String extractUsername(String token);

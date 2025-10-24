@@ -95,7 +95,7 @@ public class SeatController {
         }
 
         // 실제 사용할 userId는 인증된 사용자의 ID (관리자인 경우에만 request의 userId 허용)
-        Long effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
+        String effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
                 request.getUserId() : authenticatedUser.getUserId();
 
         SeatLockResponse response = seatService.lockSeats(
@@ -147,7 +147,7 @@ public class SeatController {
         }
 
         // 실제 사용할 userId는 인증된 사용자의 ID (관리자인 경우에만 request의 userId 허용)
-        Long effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
+        String effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
                 request.getUserId() : authenticatedUser.getUserId();
 
         boolean released = seatService.releaseSeats(
@@ -187,7 +187,7 @@ public class SeatController {
         }
 
         // 실제 사용할 userId는 인증된 사용자의 ID (관리자인 경우에만 request의 userId 허용)
-        Long effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
+        String effectiveUserId = User.Role.ADMIN.equals(authenticatedUser.getRole()) ?
                 request.getUserId() : authenticatedUser.getUserId();
 
         boolean confirmed = seatService.confirmSeats(
@@ -229,7 +229,7 @@ public class SeatController {
     @DeleteMapping("/users/{userId}/seat-locks")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> releaseAllUserLocks(
-            @PathVariable Long userId) {
+            @PathVariable String userId) {
 
         seatService.releaseAllUserLocks(userId);
 

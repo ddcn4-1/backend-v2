@@ -28,7 +28,7 @@ public interface QueueTokenRepository extends JpaRepository<QueueToken, Long> {
             "AND qt.status IN ('WAITING', 'ACTIVE') " +
             "ORDER BY qt.issuedAt DESC")
     Optional<QueueToken> findActiveTokenByUserIdAndPerformanceId(
-            @Param("userId") Long userId,
+            @Param("userId") String userId,
             @Param("performanceId") Long performanceId
     );
 
@@ -39,7 +39,7 @@ public interface QueueTokenRepository extends JpaRepository<QueueToken, Long> {
             "WHERE qt.userId = :userId " +
             "AND qt.status IN ('WAITING', 'ACTIVE') " +
             "ORDER BY qt.issuedAt DESC")
-    List<QueueToken> findActiveTokensByUserId(@Param("userId") Long userId);
+    List<QueueToken> findActiveTokensByUserId(@Param("userId") String userId);
 
     /**
      * 공연의 WAITING 토큰 목록 (발급 순서대로)

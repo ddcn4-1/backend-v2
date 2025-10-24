@@ -27,7 +27,7 @@ public class QueueToken {
 
     //  User Entity 제거 → ID만 저장
     @Column(nullable = false)
-    private Long userId;
+    private String userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

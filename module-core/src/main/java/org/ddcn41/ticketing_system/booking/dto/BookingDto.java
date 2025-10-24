@@ -16,7 +16,7 @@ import java.util.List;
 public class BookingDto {
     private Long bookingId;
     private String bookingNumber;
-    private Long userId;
+    private String userId;
     private String userName; // from User.name
     private String userPhone; // from User.phone
     private Long scheduleId;

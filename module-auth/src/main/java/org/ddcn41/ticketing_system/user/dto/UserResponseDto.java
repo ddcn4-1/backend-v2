@@ -11,7 +11,7 @@ import org.ddcn41.ticketing_system.user.entity.User;
 @AllArgsConstructor
 @Builder
 public class UserResponseDto {
-    private Long userId;
+    private String userId;
     private String username;
     private String email;
     private String name;

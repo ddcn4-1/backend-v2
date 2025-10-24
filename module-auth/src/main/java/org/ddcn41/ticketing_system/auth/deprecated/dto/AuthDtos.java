@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.dto;
+package org.ddcn41.ticketing_system.auth.deprecated.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import org.ddcn41.ticketing_system.user.entity.User;
@@ -111,7 +111,7 @@ public final class AuthDtos {
 
         // 중첩 클래스: 사용자 정보
         public static class UserInfo {
-            private Long userId;
+            private String userId;
             private String username;
             private String email;
             private String name;
@@ -120,7 +120,7 @@ public final class AuthDtos {
 
             public UserInfo() {}
 
-            public UserInfo(Long userId, String username, String email, String name, String role, LocalDateTime lastLogin) {
+            public UserInfo(String userId, String username, String email, String name, String role, LocalDateTime lastLogin) {
                 this.userId = userId;
                 this.username = username;
                 this.email = email;
@@ -130,8 +130,8 @@ public final class AuthDtos {
             }
 
             // Getters and Setters
-            public Long getUserId() { return userId; }
-            public void setUserId(Long userId) { this.userId = userId; }
+            public String getUserId() { return userId; }
+            public void setUserId(String userId) { this.userId = userId; }
 
             public String getUsername() { return username; }
             public void setUsername(String username) { this.username = username; }

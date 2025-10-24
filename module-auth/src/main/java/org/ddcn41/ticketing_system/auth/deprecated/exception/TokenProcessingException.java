@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.exception;
+package org.ddcn41.ticketing_system.auth.deprecated.exception;
 
 public class TokenProcessingException extends RuntimeException {
     public TokenProcessingException(String message) {

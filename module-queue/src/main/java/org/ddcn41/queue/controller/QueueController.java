@@ -11,12 +11,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import org.ddcn41.queue.domain.CustomUserDetails;
 import org.ddcn41.queue.dto.ApiResponse;
 import org.ddcn41.queue.dto.queue.TokenVerifyRequest;
 import org.ddcn41.queue.dto.queue.TokenVerifyResponse;
-
 import org.ddcn41.queue.dto.request.HeartbeatRequest;
 import org.ddcn41.queue.dto.request.TokenActivateRequest;
 import org.ddcn41.queue.dto.request.TokenIssueRequest;
@@ -25,13 +22,11 @@ import org.ddcn41.queue.dto.response.QueueCheckResponse;
 import org.ddcn41.queue.dto.response.QueueStatusResponse;
 import org.ddcn41.queue.dto.response.TokenIssueResponse;
 import org.ddcn41.queue.service.QueueService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -143,10 +138,10 @@ public class QueueController {
 
 
 //        String username = authentication.getName();
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
         if (userId == null) {
             // 기존 동작 보존: 임시 기본값
-            userId = 1L;
+            userId = "1L";
         }
 
         QueueCheckResponse response = queueService.getBookingToken(
@@ -168,7 +163,7 @@ public class QueueController {
             @Valid @RequestBody TokenIssueRequest request,
             Authentication authentication) {
 
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
 
         TokenIssueResponse response = queueService.issueQueueToken(
                 userId, request.getPerformanceId());
@@ -186,7 +181,7 @@ public class QueueController {
             @Valid @RequestBody TokenActivateRequest request,
             Authentication authentication) {
 
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
 
         QueueStatusResponse response = queueService.activateToken(
                 request.getToken(),
@@ -220,7 +215,7 @@ public class QueueController {
     public ResponseEntity<ApiResponse<List<QueueStatusResponse>>> getMyTokens(
             Authentication authentication) {
 
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
         List<QueueStatusResponse> responses = queueService.getUserActiveTokens(userId);
 
         return ResponseEntity.ok(ApiResponse.success("토큰 목록 조회 성공", responses));
@@ -237,7 +232,7 @@ public class QueueController {
             Authentication authentication) {
 
         try {
-            Long userId = extractUserIdFromAuth(authentication);
+            String userId = extractUserIdFromAuth(authentication);
 
             if (request != null) {
                 queueService.updateHeartbeat(
@@ -273,7 +268,7 @@ public class QueueController {
                 if (performanceIdObj != null && scheduleIdObj != null && userIdObj != null) {
                     Long performanceId = Long.valueOf(performanceIdObj.toString());
                     Long scheduleId = Long.valueOf(scheduleIdObj.toString());
-                    Long userId = Long.valueOf(userIdObj.toString());
+                    String userId = userIdObj.toString();
 
                     queueService.releaseSession(userId, performanceId, scheduleId);
                 }
@@ -295,7 +290,7 @@ public class QueueController {
             @PathVariable String token,
             Authentication authentication) {
 
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
         queueService.cancelToken(token, userId);
 
         return ResponseEntity.ok(ApiResponse.success("토큰이 취소되었습니다"));
@@ -324,7 +319,7 @@ public class QueueController {
             HttpServletRequest request) {
 
         String username = authentication.getName();
-        Long userId = extractUserIdFromAuth(authentication);
+        String userId = extractUserIdFromAuth(authentication);
         String sessionId = request.getSession().getId();
         String remoteAddr = request.getRemoteAddr();
 
@@ -361,7 +356,7 @@ public class QueueController {
         }
     }*/
     @SuppressWarnings("unchecked")
-    private Long extractUserIdFromAuth(Authentication auth) {
+    private String extractUserIdFromAuth(Authentication auth) {
         if (auth == null) return null;
 
         Object principal = auth.getPrincipal();
@@ -372,7 +367,7 @@ public class QueueController {
 
                 var m = principal.getClass().getMethod("getUserId");
                 Object v = m.invoke(principal);
-                Long id = toLong(v);
+                String id = v.toString();
                 if (id != null) return id;
             }
         } catch (Exception ignore) { /* 메서드 없거나 에러면 다음 단계 */ }
@@ -380,7 +375,7 @@ public class QueueController {
         // 2) principal이 클레임 맵이면: userId -> sub 순으로 시도
         if (principal instanceof java.util.Map<?, ?> map) {
             Object uid = map.get("userId");
-            Long id = toLong(uid);
+            String id = uid.toString();
             if (id != null) return id;
 
             // Cognito 기본 식별자 (UUID 문자열)
@@ -393,7 +388,7 @@ public class QueueController {
         String name = auth.getName();
         if (name != null && name.chars().allMatch(Character::isDigit)) {
             try {
-                return Long.valueOf(name);
+                return name;
             } catch (NumberFormatException ignore) {
             }
         }

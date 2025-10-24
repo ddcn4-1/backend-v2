@@ -1,9 +1,9 @@
-package org.ddcn41.ticketing_system.auth.service;
+package org.ddcn41.ticketing_system.common.authorization.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
-import org.ddcn41.ticketing_system.common.service.TokenBlacklistChecker;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.TokenBlacklistChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
