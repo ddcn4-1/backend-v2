@@ -548,15 +548,6 @@ INSERT INTO performance_schedules (schedule_id, performance_id, show_datetime,
 --                                                                                                               (5, 3, 5, 'sess-phantom-0002', '2025-09-11 16:42:00+09', '2025-09-11 16:57:00+09', 'ACTIVE', NOW())
 --                                                                                                               -- (6, 35, 6, 'sess-opera-0003', '2025-09-11 19:18:00+09', '2025-09-11 19:30:00+09', 'ACTIVE', NOW()),
 --                                                                                                               -- (7, 36, 4, 'sess-beethoven-0004', '2025-09-11 21:07:00+09', '2025-09-11 21:15:00+09', 'ACTIVE', NOW())
---     ON CONFLICT (lock_id) DO NOTHING;
-
--- ============================================
--- SYSTEM_METRICS
--- ============================================
-INSERT INTO system_metrics (timestamp, active_users, queue_length, cpu_usage, memory_usage, request_count, avg_response_time, server_id, created_at) VALUES
-                                                                                                                                                         (NOW() - INTERVAL '2 hours', 8500, 12, 35.8, 52.3, 4521, 0.095, 'web-srv-1', NOW()),
-                                                                                                                                                         (NOW() - INTERVAL '1 hour', 12450, 5, 42.3, 65.8, 7234, 0.145, 'web-srv-1', NOW()),
-
 
 
 
