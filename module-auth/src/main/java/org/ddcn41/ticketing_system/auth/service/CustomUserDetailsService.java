@@ -1,6 +1,6 @@
 package org.ddcn41.ticketing_system.auth.service;
 
-import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.CustomUserDetailsProvider;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -27,7 +27,6 @@ import java.util.List;
 
             return org.springframework.security.core.userdetails.User.builder()
                     .username(user.getUsername())
-                    .password(user.getPasswordHash())
                     .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
                     .build();
         }

@@ -19,15 +19,11 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(unique=true, name = "user_id", length = 225)
+    private String userId;
 
     @Column(unique = true, nullable = false)
     private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
 
     @Column(unique = true, nullable = false, length = 100)
     private String username;

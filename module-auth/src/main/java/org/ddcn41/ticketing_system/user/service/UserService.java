@@ -86,7 +86,6 @@ public class UserService {
                     .username(userCreateRequestDto.getUsername())
                     .email(userCreateRequestDto.getEmail())
                     .name(userCreateRequestDto.getName())
-                    .passwordHash(passwordHash)
                     .phone(userCreateRequestDto.getPhone())
                     .role(userCreateRequestDto.getRole())
                     .build();
@@ -106,7 +105,7 @@ public class UserService {
 
     // 유저 삭제
     @Transactional
-    public void deleteUser(Long userId) {
+    public void deleteUser(String userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));

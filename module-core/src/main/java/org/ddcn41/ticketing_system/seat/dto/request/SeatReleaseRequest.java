@@ -18,7 +18,7 @@ public class SeatReleaseRequest {
     private List<Long> seatIds;
 
     @NotNull(message = "사용자 ID는 필수입니다")
-    private Long userId;
+    private String userId;
 
     private String sessionId;
 }
