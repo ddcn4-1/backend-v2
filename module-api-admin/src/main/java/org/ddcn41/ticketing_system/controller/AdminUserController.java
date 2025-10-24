@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.user.dto.UserCreateRequestDto;
 import org.ddcn41.ticketing_system.user.dto.UserResponseDto;
 import org.ddcn41.ticketing_system.user.entity.User;
-import org.ddcn41.ticketing_system.user.service.UserService;
+import org.ddcn41.ticketing_system.user.service.UserFacadeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +27,7 @@ import java.util.List;
 @Tag(name = "Users", description = "APIs for user management")
 public class AdminUserController {
 
-    private final UserService userService;
+    private final UserFacadeService userFacadeService;
 
     // 모든 유저 조회
     @GetMapping
@@ -39,7 +39,7 @@ public class AdminUserController {
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        List<UserResponseDto> users = userService.getAllUsers();
+        List<UserResponseDto> users = userFacadeService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
@@ -55,7 +55,7 @@ public class AdminUserController {
             @ApiResponse(responseCode = "404", description = "Related resource not found", content = @Content)
     })
     public ResponseEntity<UserResponseDto> createUser(@RequestBody UserCreateRequestDto userCreateRequestDto) {
-        UserResponseDto createdUser = userService.createUser(userCreateRequestDto);
+        UserResponseDto createdUser = userFacadeService.createUser(userCreateRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
@@ -73,7 +73,7 @@ public class AdminUserController {
     public ResponseEntity<UserResponseDto> deleteUser(
             @Parameter(description = "User ID", required = true)
             @PathVariable String userId) {
-        userService.deleteUser(userId);
+        userFacadeService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -91,8 +91,26 @@ public class AdminUserController {
             @RequestParam(required = false) User.Role role,
             @RequestParam(required = false) User.Status status) {
 
-        List<UserResponseDto> users = userService.searchUsers(username, role, status);
+        List<UserResponseDto> users = userFacadeService.searchUsers(username, role, status);
 
         return ResponseEntity.ok(users);
+    }
+
+    // 유저 조회
+    @GetMapping("/{userId}")
+    @Operation(summary = "get user", description = "Get user by Id")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+    })
+    public ResponseEntity<UserResponseDto> getUserById(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable String userId) {
+
+        UserResponseDto user = userFacadeService.getUserById(userId);
+
+        return ResponseEntity.ok(user);
     }
 }

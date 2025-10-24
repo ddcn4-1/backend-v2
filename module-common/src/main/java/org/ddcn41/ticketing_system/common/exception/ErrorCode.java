@@ -35,6 +35,8 @@ public enum ErrorCode {
     // 유저 관련 (5xxx)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 사용자입니다"),
+    USER_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 생성 실패"),
+    USER_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 삭제 실패"),
 
     // 공연장 관련 (6xxx)
     VENUE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연장을 찾을 수 없습니다"),

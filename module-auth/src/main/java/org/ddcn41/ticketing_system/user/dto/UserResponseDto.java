@@ -18,4 +18,16 @@ public class UserResponseDto {
     private String phone;
     private User.Role role;
     private User.Status status;
+
+    public static UserResponseDto from(User user) {
+        return UserResponseDto.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phone(user.getPhone())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .build();
+    }
 }
