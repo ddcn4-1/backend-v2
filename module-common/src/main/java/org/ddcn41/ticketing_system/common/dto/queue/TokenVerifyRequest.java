@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class TokenVerifyRequest {
 
     @NotNull(message = "사용자 ID는 필수입니다")
-    private Long userId;
+    private String userId;
 
     @NotNull(message = "공연 ID는 필수입니다")
     private Long performanceId;

@@ -1,9 +1,10 @@
-package org.ddcn41.ticketing_system.auth.service;
+package org.ddcn41.ticketing_system.auth.deprecated.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ddcn41.ticketing_system.auth.dto.response.LogoutResponse;
-import org.ddcn41.ticketing_system.auth.exception.TokenProcessingException;
-import org.ddcn41.ticketing_system.auth.utils.JwtUtil;
+import org.ddcn41.ticketing_system.auth.deprecated.dto.response.LogoutResponse;
+import org.ddcn41.ticketing_system.auth.deprecated.exception.TokenProcessingException;
+import org.ddcn41.ticketing_system.common.authorization.service.TokenBlacklistService;
+import org.ddcn41.ticketing_system.common.authorization.util.JwtUtil;
 import org.springframework.stereotype.Service;
 
 @Slf4j

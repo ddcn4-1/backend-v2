@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.dto.response;
+package org.ddcn41.ticketing_system.auth.deprecated.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

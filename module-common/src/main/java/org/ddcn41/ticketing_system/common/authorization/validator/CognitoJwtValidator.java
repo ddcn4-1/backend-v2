@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.common.service;
+package org.ddcn41.ticketing_system.common.authorization.validator;
 
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;

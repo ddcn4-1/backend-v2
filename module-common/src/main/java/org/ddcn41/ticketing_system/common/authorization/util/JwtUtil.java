@@ -1,12 +1,12 @@
 // module-auth/src/main/java/org/ddcn41/ticketing_system/auth/utils/JwtUtil.java
 
-package org.ddcn41.ticketing_system.auth.utils;
+package org.ddcn41.ticketing_system.common.authorization.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.ddcn41.ticketing_system.common.service.JwtTokenValidator;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.JwtTokenValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +34,7 @@ public class JwtUtil implements JwtTokenValidator {
     }
 
     // ⭐ 이 메서드를 항상 사용!
-    public String generate(String username, Long userId) {
+    public String generate(String username, String userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenValidityMs);
 

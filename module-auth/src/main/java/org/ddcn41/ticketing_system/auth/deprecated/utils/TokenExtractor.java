@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.utils;
+package org.ddcn41.ticketing_system.auth.deprecated.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;

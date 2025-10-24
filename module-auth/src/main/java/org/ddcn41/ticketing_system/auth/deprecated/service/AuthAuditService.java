@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.service;
+package org.ddcn41.ticketing_system.auth.deprecated.service;
 
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;

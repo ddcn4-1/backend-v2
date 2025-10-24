@@ -1,8 +1,8 @@
-package org.ddcn41.ticketing_system.auth.handler;
+package org.ddcn41.ticketing_system.auth.deprecated.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.ddcn41.ticketing_system.auth.dto.response.LogoutResponse;
-import org.ddcn41.ticketing_system.auth.exception.TokenProcessingException;
+import org.ddcn41.ticketing_system.auth.deprecated.dto.response.LogoutResponse;
+import org.ddcn41.ticketing_system.auth.deprecated.exception.TokenProcessingException;
 import org.ddcn41.ticketing_system.common.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.common.config;
+package org.ddcn41.ticketing_system.common.authorization.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,10 +6,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.ddcn41.ticketing_system.common.service.CognitoJwtValidator;
-import org.ddcn41.ticketing_system.common.service.CustomUserDetailsProvider;
-import org.ddcn41.ticketing_system.common.service.JwtTokenValidator;
-import org.ddcn41.ticketing_system.common.service.TokenBlacklistChecker;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.CustomUserDetailsProvider;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.JwtTokenValidator;
+import org.ddcn41.ticketing_system.common.authorization.interfaces.TokenBlacklistChecker;
+import org.ddcn41.ticketing_system.common.authorization.validator.CognitoJwtValidator;
+import org.ddcn41.ticketing_system.common.config.CognitoProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
