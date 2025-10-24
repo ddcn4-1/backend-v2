@@ -15,7 +15,9 @@ import org.springframework.context.annotation.Configuration;
                 description = "APIs for ticketing system"
         ),
         servers = {
-                @Server(url = "http://localhost:8082", description = "개발 서버")
+                @Server(url = "https://local.api.ddcn41.com", description = "개발 서버 통합 Domain"),
+                @Server(url = "http://localhost:8081", description = "Admin 개발 서버 localhost"),
+                @Server(url = "http://localhost:8082", description = "Client 개발 서버 localhost"),
         }
 )
 @SecurityScheme(
