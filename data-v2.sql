@@ -218,13 +218,13 @@ CREATE INDEX IF NOT EXISTS idx_venues_seatmap ON venues USING gin (seat_map_json
 -- ============================================
 -- 관리자 계정
 INSERT INTO users (user_id, email, username, name, phone, role, status) VALUES
-    ('admin-001', 'admin@ticket.com', 'admin', 'Administrator', '010-0000-0000', 'ADMIN', 'ACTIVE')
+    ('admin-001', 'admin@ticket.com', 'admin', 'cognito admin', '010-0000-0000', 'ADMIN', 'ACTIVE')
     ON CONFLICT (username) DO NOTHING;
 
 -- 일반 사용자 계정들
 INSERT INTO users (user_id, email, username, name, phone, role, status) VALUES
-                                                                            ('user-001', 'user@ticket.com', 'testuser', 'Test User', '010-1111-1111', 'USER', 'ACTIVE'),
-                                                                            ('user-002', 'user2@ticket.com', 'user2', 'user2', '010-1111-1111', 'USER', 'ACTIVE'),
+                                                                            ('user-001', 'user2@ticket.com', 'testuser', 'Test User', '010-1111-1111', 'USER', 'ACTIVE'),
+                                                                            ('user-002', 'user@ticket.com', 'user2', 'cognito user', '010-1111-1111', 'USER', 'ACTIVE'),
                                                                             ('user-003', 'john@ticket.com', 'john', 'John Doe', '010-2222-2222', 'USER', 'ACTIVE'),
                                                                             ('user-004', 'jane@ticket.com', 'jane', 'Jane Smith', '010-3333-3333', 'USER', 'ACTIVE'),
                                                                             ('user-005', 'mike@ticket.com', 'mike', 'Mike Johnson', '010-4444-4444', 'USER', 'ACTIVE'),
