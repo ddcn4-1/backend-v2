@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.controller;
+package org.ddcn41.ticketing_system.auth.deprecated.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -50,6 +50,7 @@ public class AuthController {
     private CognitoProperties cognitoProperties;
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
+
     public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserService userService, AuthService authService, TokenExtractor tokenExtractor, AuthAuditService authAuditService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
@@ -176,58 +177,58 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "No valid token found")
     })
     public ResponseEntity<org.ddcn41.ticketing_system.common.dto.ApiResponse<LogoutResponse>> logout(
-        HttpServletRequest request,
-        Authentication authentication) {
+            HttpServletRequest request,
+            Authentication authentication) {
 
-    String username = authentication != null ? authentication.getName() : "anonymous";
-    boolean tokenInvalidated = false;
+        String username = authentication != null ? authentication.getName() : "anonymous";
+        boolean tokenInvalidated = false;
 
-    try {
-        // 1. Cognito 쿠키 토큰 무효화
-        if (cognitoProperties.isEnabled()) {
-            String cognitoToken = extractCognitoTokenFromCookies(request);
-            if (cognitoToken != null) {
-                tokenBlacklistService.addToBlacklist(cognitoToken);
-                tokenInvalidated = true;
-                log.info("Cognito token invalidated for user: {}", username);
+        try {
+            // 1. Cognito 쿠키 토큰 무효화
+            if (cognitoProperties.isEnabled()) {
+                String cognitoToken = extractCognitoTokenFromCookies(request);
+                if (cognitoToken != null) {
+                    tokenBlacklistService.addToBlacklist(cognitoToken);
+                    tokenInvalidated = true;
+                    log.info("Cognito token invalidated for user: {}", username);
+                }
             }
-        }
 
-        // 2. 기존 JWT 토큰 무효화
-        if (!tokenInvalidated) {  // Cognito 토큰이 없을 때만 JWT 확인
-            String jwtToken = tokenExtractor.extractTokenFromRequest(request);
-            if (jwtToken != null) {
-                authService.processLogout(jwtToken, username);  // 반환값 사용 안 함 (블랙리스트만 필요)
-                tokenInvalidated = true;
-                log.info("JWT token invalidated for user: {}", username);
+            // 2. 기존 JWT 토큰 무효화
+            if (!tokenInvalidated) {  // Cognito 토큰이 없을 때만 JWT 확인
+                String jwtToken = tokenExtractor.extractTokenFromRequest(request);
+                if (jwtToken != null) {
+                    authService.processLogout(jwtToken, username);  // 반환값 사용 안 함 (블랙리스트만 필요)
+                    tokenInvalidated = true;
+                    log.info("JWT token invalidated for user: {}", username);
+                }
             }
-        }
 
-        // 3. 응답 생성
-        String message = tokenInvalidated ?
-                "백엔드 토큰 무효화 완료." :
-                "무효화할 토큰이 없습니다.";
+            // 3. 응답 생성
+            String message = tokenInvalidated ?
+                    "백엔드 토큰 무효화 완료." :
+                    "무효화할 토큰이 없습니다.";
 
-        LogoutResponse logoutData = LogoutResponse.builder()
-                .message(message)
-                .username(username)
-                .cognitoLogoutUrl(null)  // 백엔드에서는 Cognito URL 제공하지 않음
-                .build();
+            LogoutResponse logoutData = LogoutResponse.builder()
+                    .message(message)
+                    .username(username)
+                    .cognitoLogoutUrl(null)  // 백엔드에서는 Cognito URL 제공하지 않음
+                    .build();
 
-        if (tokenInvalidated) {
-            authAuditService.logLogout(username);
-        }
+            if (tokenInvalidated) {
+                authAuditService.logLogout(username);
+            }
 
-        return ResponseEntity.ok(
-                org.ddcn41.ticketing_system.common.dto.ApiResponse.success(message, logoutData)
-        );
+            return ResponseEntity.ok(
+                    org.ddcn41.ticketing_system.common.dto.ApiResponse.success(message, logoutData)
+            );
 
-    } catch (Exception e) {
-        log.error("Token invalidation failed for user: {}", username, e);
+        } catch (Exception e) {
+            log.error("Token invalidation failed for user: {}", username, e);
 
-        return ResponseEntity.status(500).body(
-                org.ddcn41.ticketing_system.common.dto.ApiResponse.error("토큰 무효화 실패")
-        );
+            return ResponseEntity.status(500).body(
+                    org.ddcn41.ticketing_system.common.dto.ApiResponse.error("토큰 무효화 실패")
+            );
         }
     }
 
@@ -235,7 +236,7 @@ public class AuthController {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("access_token".equals(cookie.getName())) {
-                        return cookie.getValue();
+                    return cookie.getValue();
                 }
             }
         }

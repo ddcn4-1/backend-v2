@@ -1,18 +1,18 @@
-package org.ddcn41.ticketing_system.booking.dto;
+package org.ddcn41.ticketing_system.common.dto.booking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class BookingDto {
     private Long bookingId;
     private String bookingNumber;
@@ -27,7 +27,8 @@ public class BookingDto {
     private Double totalAmount;
     private List<BookingSeatDto> seats;
 
-    public enum StatusEnum { CONFIRMED, CANCELLED }
+    public enum StatusEnum {CONFIRMED, CANCELLED}
+
     private StatusEnum status;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

@@ -1,15 +1,17 @@
-package org.ddcn41.ticketing_system.booking.dto;
+package org.ddcn41.ticketing_system.common.dto.booking;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter
-@Builder
 public class BookingSeatDto {
     private Long bookingSeatId;
     private Long bookingId;

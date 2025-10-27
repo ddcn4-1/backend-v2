@@ -16,9 +16,9 @@ import org.ddcn41.ticketing_system.booking.dto.request.CancelBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.request.CreateBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CancelBooking200ResponseDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CreateBookingResponseDto;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookingDetail200ResponseDto;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.booking.service.BookingService;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookingDetail200ResponseDto;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -47,8 +47,8 @@ public class BookingController {
     public ResponseEntity<CreateBookingResponseDto> createBooking(
             @Valid @RequestBody CreateBookingRequestDto body) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth != null ? auth.getName() : null;
-        CreateBookingResponseDto res = bookingService.createBooking(username, body);
+        String userId = auth != null ? auth.getName() : null;
+        CreateBookingResponseDto res = bookingService.createBooking(userId, body);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
@@ -66,8 +66,8 @@ public class BookingController {
             @Parameter(description = "Booking ID", required = true)
             @PathVariable Long bookingId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth != null ? auth.getName() : null;
-        return ResponseEntity.ok(bookingService.getUserBookingDetail(username, bookingId));
+        String userId = auth != null ? auth.getName() : null;
+        return ResponseEntity.ok(bookingService.getUserBookingDetail(userId, bookingId));
     }
 
     @GetMapping("/me")
@@ -115,7 +115,7 @@ public class BookingController {
             @PathVariable Long bookingId,
             @Valid @RequestBody(required = false) CancelBookingRequestDto body) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth != null ? auth.getName() : null;
-        return ResponseEntity.ok(bookingService.cancelBooking(bookingId, body, username));
+        String userId = auth != null ? auth.getName() : null;
+        return ResponseEntity.ok(bookingService.cancelBooking(bookingId, body, userId));
     }
 }

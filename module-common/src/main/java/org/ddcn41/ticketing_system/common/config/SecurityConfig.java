@@ -74,7 +74,7 @@ public class SecurityConfig {
                         .requestMatchers("/v1/auth/**").permitAll()
                         .requestMatchers("/v1/admin/auth/login").permitAll()  // 관리자 로그인 허용
                         .requestMatchers("/v1/admin/auth/logout").permitAll()  // 관리자 로그아웃 허용
-                        
+
                         // 헬스체크 허용
                         .requestMatchers("/actuator/**").permitAll()
 
@@ -87,18 +87,14 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // 관리자 전용 API 엔드포인트 (로그인 후 ADMIN 권한 필요)
-                        .requestMatchers("/v1/admin/auth/**").hasRole("ADMIN")
-
                         .requestMatchers("/v1/admin/users/**").hasAnyRole("ADMIN", "DEVOPS")
                         .requestMatchers("/v1/admin/performances/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/v1/admin/schedules/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/admin/bookings/**").hasRole("ADMIN")
 
-                        .requestMatchers("/v1/admin/schedules/**").permitAll()  // 임시로 전체 허용 (개발/테스트용)
-                        // .requestMatchers("/v1/admin/schedules/**").hasRole("ADMIN")
-
-                        .requestMatchers("/v1/admin/bookings/**").permitAll()  // 임시로 전체 허용 (개발/테스트용)
-                        // .requestMatchers("/v1/admin/bookings/**").hasRole("ADMIN")
-
+                        // internal API 허용
+                        .requestMatchers("/v1/internal/**").permitAll()
+                        
                         // 공연조회 API 허용
                         .requestMatchers("/v1/performances/**").permitAll()
 

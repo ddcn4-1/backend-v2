@@ -1,9 +1,9 @@
 package org.ddcn41.ticketing_system.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.dto.user.UserCreateRequest;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
-import org.ddcn41.ticketing_system.user.dto.UserCreateRequestDto;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -19,18 +19,18 @@ public class UserService {
 
     // 유저 생성
     @Transactional
-    public User createUser(UserCreateRequestDto userCreateRequestDto) {
+    public User createUser(UserCreateRequest request) {
         // 중복 확인
-        if (userRepository.existsByUsername(userCreateRequestDto.getUsername()))
+        if (userRepository.existsByUsername(request.getUsername()))
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
 
         User user = User.builder()
-                .userId(userCreateRequestDto.getUserId())
-                .username(userCreateRequestDto.getUsername())
-                .email(userCreateRequestDto.getEmail())
-                .name(userCreateRequestDto.getName())
-                .phone(userCreateRequestDto.getPhone())
-                .role(userCreateRequestDto.getRole())
+                .userId(request.getUserId())
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .name(request.getName())
+                .phone(request.getPhone())
+                .role(User.Role.valueOf(request.getRole()))
                 .build();
 
         return userRepository.save(user);
@@ -45,7 +45,7 @@ public class UserService {
 
         userRepository.deleteById(userId);
     }
-    
+
     /**
      * 사용자 정보 조회
      */

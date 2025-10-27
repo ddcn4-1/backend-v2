@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.performance.dto.response;
+package org.ddcn41.ticketing_system.common.dto.performance.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PerformanceSchedulesResponse {
-    
+
     @Schema(description = "공연 회차 목록")
-    private List<PerformanceResponse.ScheduleResponse> schedules;
+    private List<ScheduleResponse> schedules;
 }

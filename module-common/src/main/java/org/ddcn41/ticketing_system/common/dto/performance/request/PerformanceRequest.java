@@ -1,21 +1,19 @@
-package org.ddcn41.ticketing_system.performance.dto.request;
+package org.ddcn41.ticketing_system.common.dto.performance.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.ddcn41.ticketing_system.performance.entity.Performance;
-import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class PerformanceRequestDto {
+public class PerformanceRequest {
     private Long venueId;
     private String title;
     private String description;
@@ -25,6 +23,6 @@ public class PerformanceRequestDto {
     private LocalDate endDate;
     private Integer runningTime;
     private BigDecimal basePrice;
-    private Performance.PerformanceStatus status;
-    private List<PerformanceSchedule> schedules;
+    private String status;
+    private List<PerformanceScheduleRequest> schedules;
 }

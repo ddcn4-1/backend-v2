@@ -1,22 +1,21 @@
-package org.ddcn41.ticketing_system.user.dto;
+package org.ddcn41.ticketing_system.common.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.ddcn41.ticketing_system.user.entity.User;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class UserCreateRequestDto {
+public class UserCreateRequest {
     private String userId;
     private String username;
     private String email;
     private String name;
     private String password;
     private String phone;
-    private User.Role role;
-    private User.Status status;
+    private String role;
+    private String status;
 }

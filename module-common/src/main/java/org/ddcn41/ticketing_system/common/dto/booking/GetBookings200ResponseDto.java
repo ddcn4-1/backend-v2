@@ -1,17 +1,16 @@
-package org.ddcn41.ticketing_system.booking.dto.response;
+package org.ddcn41.ticketing_system.common.dto.booking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.ddcn41.ticketing_system.booking.dto.BookingDto;
 
 import java.util.List;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class GetBookings200ResponseDto {
     private List<BookingDto> bookings;
     private Integer total;

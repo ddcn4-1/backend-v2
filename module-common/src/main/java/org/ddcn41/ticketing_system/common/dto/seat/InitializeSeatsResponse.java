@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.seat.dto.response;
+package org.ddcn41.ticketing_system.common.dto.seat;
 
 import lombok.Builder;
 import lombok.Getter;

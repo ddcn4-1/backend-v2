@@ -1,19 +1,18 @@
-package org.ddcn41.ticketing_system.booking.dto.response;
+package org.ddcn41.ticketing_system.common.dto.booking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.ddcn41.ticketing_system.booking.dto.BookingSeatDto;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class GetBookingDetail200ResponseDto {
     private Long bookingId;
     private String bookingNumber;
@@ -29,7 +28,8 @@ public class GetBookingDetail200ResponseDto {
     private Integer seatCount;
     private Double totalAmount;
 
-    public enum StatusEnum { CONFIRMED, CANCELLED }
+    public enum StatusEnum {CONFIRMED, CANCELLED}
+
     private StatusEnum status;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

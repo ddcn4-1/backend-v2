@@ -1,10 +1,10 @@
 package org.ddcn41.ticketing_system.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.dto.user.UserCreateRequest;
+import org.ddcn41.ticketing_system.common.dto.user.UserResponse;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
-import org.ddcn41.ticketing_system.user.dto.UserCreateRequestDto;
-import org.ddcn41.ticketing_system.user.dto.UserResponseDto;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class UserFacadeService {
     private final UserCognitoService userCognitoService;
 
     // 유저 생성
-    public UserResponseDto createUser(UserCreateRequestDto request) {
+    public UserResponse createUser(UserCreateRequest request) {
         User savedUser = null;
         String cognitoSub = null;
 
@@ -34,13 +34,13 @@ public class UserFacadeService {
                     request.getEmail(),
                     request.getName()
             );
-            userCognitoService.addUserToGroup(request.getUsername(), request.getRole().toString().toLowerCase());
+            userCognitoService.addUserToGroup(request.getUsername(), request.getRole().toLowerCase());
             userCognitoService.changePassword(request.getUsername(), request.getPassword());
 
             request.setUserId(cognitoSub);
             savedUser = userService.createUser(request);
 
-            return UserResponseDto.from(savedUser);
+            return toResponse(savedUser);
 
         } catch (UsernameExistsException e) {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
@@ -90,20 +90,20 @@ public class UserFacadeService {
     }
 
     // 모든 유저 조회
-    public List<UserResponseDto> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         List<User> users = userService.findAll();
 
         return users.stream()
-                .map(UserResponseDto::from)
+                .map(this::toResponse)
                 .toList();
     }
 
     // 유저 목록 검색
-    public List<UserResponseDto> searchUsers(String username, User.Role role, User.Status status) {
+    public List<UserResponse> searchUsers(String username, String role, String status) {
         List<User> users = userService.findAll();
 
         return users.stream()
-                .map(UserResponseDto::from)
+                .map(this::toResponse)
                 .filter(u -> username == null || username.trim().isEmpty() ||
                         u.getUsername().toLowerCase().contains(username.toLowerCase()))
                 .filter(u -> role == null || u.getRole().equals(role))
@@ -112,10 +112,29 @@ public class UserFacadeService {
     }
 
     // 유저 조회
-    public UserResponseDto getUserById(String userId) {
+    public UserResponse getUserById(String userId) {
         User user = userService.findById(userId);
 
-        return UserResponseDto.from(user);
+        return toResponse(user);
+    }
+
+    // 유저 조회
+    public UserResponse getUserByUsername(String username) {
+        User user = userService.findByUsername(username);
+
+        return toResponse(user);
+    }
+
+    private UserResponse toResponse(User user) {
+        return UserResponse.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phone(user.getPhone())
+                .role(user.getRole().toString())
+                .status(user.getStatus().toString())
+                .build();
     }
 
 }

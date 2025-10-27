@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -112,7 +113,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                    .username(userInfo.getUsername())
+                    .username(userInfo.getSub())    // username에 sub(userId) 주입
                     .password("")
                     .authorities(authorities)
                     .build();

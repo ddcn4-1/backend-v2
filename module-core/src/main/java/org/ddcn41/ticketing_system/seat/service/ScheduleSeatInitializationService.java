@@ -3,11 +3,11 @@ package org.ddcn41.ticketing_system.seat.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.dto.seat.InitializeSeatsResponse;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
-import org.ddcn41.ticketing_system.seat.dto.response.InitializeSeatsResponse;
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
 import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -32,7 +32,7 @@ public class ScheduleSeatInitializationService {
      */
     @Transactional
     public List<InitializeSeatsResponse> initializeAll(boolean dryRun) {
-        ScheduleSeatInitializationService self =  scheduleSeatInitializationServiceProvider.getObject();
+        ScheduleSeatInitializationService self = scheduleSeatInitializationServiceProvider.getObject();
 
         List<PerformanceSchedule> schedules = scheduleRepository.findAll();
         List<InitializeSeatsResponse> results = new ArrayList<>();
@@ -60,8 +60,7 @@ public class ScheduleSeatInitializationService {
 
         if (schedule.getPerformance() == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "scheduleId: " + scheduleId);
-        }
-        else if (schedule.getPerformance().getVenue() == null) {
+        } else if (schedule.getPerformance().getVenue() == null) {
             throw new BusinessException(ErrorCode.VENUE_NOT_FOUND, "scheduleId: " + scheduleId);
         }
 
@@ -87,7 +86,8 @@ public class ScheduleSeatInitializationService {
                 java.util.Map.Entry<String, JsonNode> e = it.next();
                 try {
                     pricing.put(e.getKey(), new java.math.BigDecimal(e.getValue().asText()));
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
         if (!sections.isArray()) {

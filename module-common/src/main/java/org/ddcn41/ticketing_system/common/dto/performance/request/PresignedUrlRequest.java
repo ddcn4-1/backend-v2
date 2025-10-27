@@ -1,11 +1,13 @@
-package org.ddcn41.ticketing_system.performance.dto.request;
+package org.ddcn41.ticketing_system.common.dto.performance.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class PresignedUrlRequest {
     private String imageName;

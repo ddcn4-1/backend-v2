@@ -3,24 +3,26 @@ package org.ddcn41.ticketing_system.booking.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.booking.dto.BookingDto;
 import org.ddcn41.ticketing_system.booking.dto.BookingProjection;
-import org.ddcn41.ticketing_system.booking.dto.BookingSeatDto;
 import org.ddcn41.ticketing_system.booking.dto.request.CancelBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.request.CreateBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CancelBooking200ResponseDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CreateBookingResponseDto;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookingDetail200ResponseDto;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.booking.entity.Booking;
 import org.ddcn41.ticketing_system.booking.entity.Booking.BookingStatus;
 import org.ddcn41.ticketing_system.booking.entity.BookingSeat;
 import org.ddcn41.ticketing_system.booking.repository.BookingRepository;
 import org.ddcn41.ticketing_system.booking.repository.BookingSeatRepository;
 import org.ddcn41.ticketing_system.common.client.QueueClient;
+import org.ddcn41.ticketing_system.common.client.UserClient;
 import org.ddcn41.ticketing_system.common.dto.ApiResponse;
+import org.ddcn41.ticketing_system.common.dto.booking.BookingDto;
+import org.ddcn41.ticketing_system.common.dto.booking.BookingSeatDto;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookingDetail200ResponseDto;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyResponse;
+import org.ddcn41.ticketing_system.common.dto.user.UserResponse;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
@@ -28,9 +30,6 @@ import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRep
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
 import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.ddcn41.ticketing_system.seat.service.SeatService;
-import org.ddcn41.ticketing_system.user.entity.User;
-import org.ddcn41.ticketing_system.user.repository.UserRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -56,16 +55,15 @@ public class BookingService {
     private final BookingSeatRepository bookingSeatRepository;
     private final PerformanceScheduleRepository scheduleRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
-    private final UserRepository userRepository;
 
     private final SeatService seatService;
     private final BookingAuditService bookingAuditService;
     private final QueueClient queueClient;
+    private final UserClient userClient;
 
     @Transactional(rollbackFor = Exception.class)
-    public CreateBookingResponseDto createBooking(String username, CreateBookingRequestDto req) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    public CreateBookingResponseDto createBooking(String userId, CreateBookingRequestDto req) {
+        UserResponse user = userClient.getUserById(userId);
 
         PerformanceSchedule schedule = scheduleRepository.findById(req.getScheduleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
@@ -146,7 +144,7 @@ public class BookingService {
 
         Booking booking = Booking.builder()
                 .bookingNumber(bookingNumber)
-                .user(user)
+                .userId(user.getUserId())
                 .schedule(schedule)
                 .seatCount(seats.size())
                 .totalAmount(total)
@@ -159,7 +157,7 @@ public class BookingService {
         if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
             try {
                 queueClient.useToken(req.getQueueToken());
-                log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", username, req.getQueueToken());
+                log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", user.getUsername(), req.getQueueToken());
             } catch (Exception e) {
                 log.warn("토큰 사용 처리 중 오류 발생: {}", e.getMessage());
                 // 예매는 완료되었으므로 로그만 남기고 계속 진행
@@ -194,7 +192,7 @@ public class BookingService {
      */
     private void validateQueueTokenIfRequired(
             CreateBookingRequestDto req,
-            User user,
+            UserResponse user,
             PerformanceSchedule schedule) {
 
         if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
@@ -240,15 +238,14 @@ public class BookingService {
      * 사용자 예약 상세 조회 (소유권 검증 포함)
      */
     @Transactional(readOnly = true)
-    public GetBookingDetail200ResponseDto getUserBookingDetail(String username, Long bookingId) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    public GetBookingDetail200ResponseDto getUserBookingDetail(String userId, Long bookingId) {
+        UserResponse user = userClient.getUserById(userId);
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
 
         // 소유권 검증
-        if (!booking.getUser().getUserId().equals(user.getUserId())) {
+        if (!booking.getUserId().equals(user.getUserId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "해당 예매에 접근할 권한이 없습니다");
         }
 
@@ -365,9 +362,8 @@ public class BookingService {
      * 사용자별 예약 목록 조회
      */
     @Transactional(readOnly = true)
-    public GetBookings200ResponseDto getUserBookings(String username, String status, int page, int limit) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    public GetBookings200ResponseDto getUserBookings(String userId, String status, int page, int limit) {
+        UserResponse user = userClient.getUserById(userId);
 
         PageRequest pr = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
 
@@ -379,9 +375,9 @@ public class BookingService {
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 상태 값");
             }
-            result = bookingRepository.findByUserAndStatus(user, bs, pr);
+            result = bookingRepository.findByUserIdAndStatus(user.getUserId(), bs, pr);
         } else {
-            result = bookingRepository.findByUser(user, pr);
+            result = bookingRepository.findByUserId(user.getUserId(), pr);
         }
 
         List<BookingDto> items = result.getContent().stream()
@@ -401,6 +397,8 @@ public class BookingService {
      * BookingProjection을 BookingDto로 변환 (성능 최적화)
      */
     private BookingDto toListDtoFromProjection(BookingProjection p) {
+        UserResponse user = userClient.getUserById(p.getUserId());
+
         List<BookingSeatDto> seatDtos = new ArrayList<>();
         if (p.getBookingSeatId() != null) {
             seatDtos.add(BookingSeatDto.builder()
@@ -419,9 +417,9 @@ public class BookingService {
         return BookingDto.builder()
                 .bookingId(p.getBookingId())
                 .bookingNumber(p.getBookingNumber())
-                .userId(p.getUserId())
-                .userName(p.getUserName())
-                .userPhone(p.getUserPhone())
+                .userId(user.getUserId())
+                .userName(user.getUsername())
+                .userPhone(user.getPhone())
                 .scheduleId(p.getScheduleId())
                 .performanceTitle(p.getPerformanceTitle())
                 .venueName(p.getVenueName())
@@ -443,7 +441,7 @@ public class BookingService {
         return CreateBookingResponseDto.builder()
                 .bookingId(b.getBookingId())
                 .bookingNumber(b.getBookingNumber())
-                .userId(b.getUser() != null ? b.getUser().getUserId() : null)
+                .userId(b.getUserId() != null ? b.getUserId() : null)
                 .scheduleId(b.getSchedule() != null ? b.getSchedule().getScheduleId() : null)
                 .seatCount(b.getSeatCount())
                 .totalAmount(b.getTotalAmount() == null ? 0.0 : b.getTotalAmount().doubleValue())
@@ -470,12 +468,14 @@ public class BookingService {
     }
 
     private BookingDto toListDto(Booking b) {
+        UserResponse user = userClient.getUserById(b.getUserId());
+
         return BookingDto.builder()
                 .bookingId(b.getBookingId())
                 .bookingNumber(b.getBookingNumber())
-                .userId(b.getUser() != null ? b.getUser().getUserId() : null)
-                .userName(b.getUser() != null ? b.getUser().getName() : null)
-                .userPhone(b.getUser() != null ? b.getUser().getPhone() : null)
+                .userId(user != null ? user.getUserId() : null)
+                .userName(user != null ? user.getName() : null)
+                .userPhone(user != null ? user.getPhone() : null)
                 .scheduleId(b.getSchedule() != null ? b.getSchedule().getScheduleId() : null)
                 .performanceTitle(b.getSchedule() != null && b.getSchedule().getPerformance() != null ? b.getSchedule().getPerformance().getTitle() : null)
                 .venueName(b.getSchedule() != null && b.getSchedule().getPerformance() != null && b.getSchedule().getPerformance().getVenue() != null ? b.getSchedule().getPerformance().getVenue().getVenueName() : null)
@@ -494,6 +494,8 @@ public class BookingService {
     }
 
     private GetBookingDetail200ResponseDto toDetailDto(Booking b) {
+        UserResponse user = userClient.getUserById(b.getUserId());
+
         // Get first seat info for display
         String seatCode = null;
         String seatZone = null;
@@ -512,9 +514,9 @@ public class BookingService {
         return GetBookingDetail200ResponseDto.builder()
                 .bookingId(b.getBookingId())
                 .bookingNumber(b.getBookingNumber())
-                .userId(b.getUser() != null ? b.getUser().getUserId() : null)
-                .userName(b.getUser() != null ? b.getUser().getName() : null)
-                .userPhone(b.getUser() != null ? b.getUser().getPhone() : null)
+                .userId(user != null ? user.getUserId() : null)
+                .userName(user != null ? user.getName() : null)
+                .userPhone(user != null ? user.getPhone() : null)
                 .scheduleId(b.getSchedule() != null ? b.getSchedule().getScheduleId() : null)
                 .performanceTitle(b.getSchedule() != null && b.getSchedule().getPerformance() != null ? b.getSchedule().getPerformance().getTitle() : null)
                 .venueName(b.getSchedule() != null && b.getSchedule().getPerformance() != null && b.getSchedule().getPerformance().getVenue() != null ? b.getSchedule().getPerformance().getVenue().getVenueName() : null)

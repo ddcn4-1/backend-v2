@@ -1,11 +1,13 @@
-package org.ddcn41.ticketing_system.performance.dto.response;
+package org.ddcn41.ticketing_system.common.dto.performance.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class PresignedUrlResponse {
     private String presignedUrl;
