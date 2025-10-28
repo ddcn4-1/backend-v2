@@ -2,9 +2,9 @@ package org.ddcn41.ticketing_system.booking.service;
 
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.ticketing_system.booking.entity.Booking;
-import org.ddcn41.ticketing_system.common.dto.user.UserResponse;
 import org.ddcn41.ticketing_system.metric.dto.AuditLogDto;
 import org.ddcn41.ticketing_system.metric.service.AuditEventService;
+import org.ddcn41.ticketing_system.user.entity.User;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,7 +20,7 @@ public class BookingAuditService {
 
     private final AuditEventService auditEventService;
 
-    public void logBookingCreated(UserResponse user, Booking booking, List<Long> seatIds) {
+    public void logBookingCreated(User user, Booking booking, List<Long> seatIds) {
         Map<String, Object> data = new HashMap<>();
 
         data.put("bookingId", booking.getBookingId());
@@ -55,7 +55,7 @@ public class BookingAuditService {
         auditEventService.addAuditEvent(auditLogDto);
     }
 
-    private String resolvePrincipal(UserResponse user) {
+    private String resolvePrincipal(User user) {
         if (user != null && user.getUsername() != null) {
             return user.getUsername();
         }

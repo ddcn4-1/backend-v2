@@ -14,13 +14,11 @@ import org.ddcn41.ticketing_system.booking.entity.BookingSeat;
 import org.ddcn41.ticketing_system.booking.repository.BookingRepository;
 import org.ddcn41.ticketing_system.booking.repository.BookingSeatRepository;
 import org.ddcn41.ticketing_system.common.client.QueueClient;
-import org.ddcn41.ticketing_system.common.client.UserClient;
 import org.ddcn41.ticketing_system.common.dto.booking.BookingDto;
 import org.ddcn41.ticketing_system.common.dto.booking.BookingSeatDto;
 import org.ddcn41.ticketing_system.common.dto.booking.GetBookingDetail200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
-import org.ddcn41.ticketing_system.common.dto.user.UserResponse;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
@@ -28,6 +26,8 @@ import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRep
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
 import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.ddcn41.ticketing_system.seat.service.SeatService;
+import org.ddcn41.ticketing_system.user.entity.User;
+import org.ddcn41.ticketing_system.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -57,11 +57,12 @@ public class BookingService {
     private final SeatService seatService;
     private final BookingAuditService bookingAuditService;
     private final QueueClient queueClient;
-    private final UserClient userClient;
+    private final UserRepository userRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String userId, CreateBookingRequestDto req) {
-        UserResponse user = userClient.getUserById(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         PerformanceSchedule schedule = scheduleRepository.findById(req.getScheduleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
@@ -190,7 +191,7 @@ public class BookingService {
      */
     private void validateQueueTokenIfRequired(
             CreateBookingRequestDto req,
-            UserResponse user,
+            User user,
             PerformanceSchedule schedule) {
 
         if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
@@ -238,7 +239,8 @@ public class BookingService {
      */
     @Transactional(readOnly = true)
     public GetBookingDetail200ResponseDto getUserBookingDetail(String userId, Long bookingId) {
-        UserResponse user = userClient.getUserById(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
@@ -362,7 +364,8 @@ public class BookingService {
      */
     @Transactional(readOnly = true)
     public GetBookings200ResponseDto getUserBookings(String userId, String status, int page, int limit) {
-        UserResponse user = userClient.getUserById(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         PageRequest pr = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
 
@@ -396,7 +399,8 @@ public class BookingService {
      * BookingProjection을 BookingDto로 변환 (성능 최적화)
      */
     private BookingDto toListDtoFromProjection(BookingProjection p) {
-        UserResponse user = userClient.getUserById(p.getUserId());
+        User user = userRepository.findById(p.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         List<BookingSeatDto> seatDtos = new ArrayList<>();
         if (p.getBookingSeatId() != null) {
@@ -467,7 +471,8 @@ public class BookingService {
     }
 
     private BookingDto toListDto(Booking b) {
-        UserResponse user = userClient.getUserById(b.getUserId());
+        User user = userRepository.findById(b.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         return BookingDto.builder()
                 .bookingId(b.getBookingId())
@@ -493,7 +498,8 @@ public class BookingService {
     }
 
     private GetBookingDetail200ResponseDto toDetailDto(Booking b) {
-        UserResponse user = userClient.getUserById(b.getUserId());
+        User user = userRepository.findById(b.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // Get first seat info for display
         String seatCode = null;
