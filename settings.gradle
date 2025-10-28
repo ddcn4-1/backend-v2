@@ -25,3 +25,5 @@ include 'module-queue'
 include 'module-metric'
 include 'module-api'
 include 'module-api-admin'
+
+include 'authorization-spring-boot-starter'
