@@ -9,12 +9,12 @@ import java.util.Collection;
 @Getter
 public class CustomUserDetails extends User {
 
-    private final Long userId;
+    private final String userId;
 
     public CustomUserDetails(String username,
                              String password,
                              Collection<? extends GrantedAuthority> authorities,
-                             Long userId) {
+                             String userId) {
         super(username, password, authorities);
         this.userId = userId;
     }
@@ -26,7 +26,7 @@ public class CustomUserDetails extends User {
                              boolean credentialsNonExpired,
                              boolean accountNonLocked,
                              Collection<? extends GrantedAuthority> authorities,
-                             Long userId) {
+                             String userId) {
         super(username, password, enabled, accountNonExpired,
                 credentialsNonExpired, accountNonLocked, authorities);
         this.userId = userId;

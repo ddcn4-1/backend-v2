@@ -1,12 +1,17 @@
+// module-queue/src/main/java/org/ddcn41/queue/config/JwtAuthenticationFilter.java
+
 package org.ddcn41.queue.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.queue.domain.CustomUserDetails;
+import org.ddcn41.queue.repository.UserRepository;
+import org.ddcn41.queue.security.CognitoJwtValidator;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,14 +20,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final CognitoJwtValidator cognitoValidator;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -31,51 +39,119 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        try {
-            String token = extractTokenFromRequest(request);
+        log.debug("=== JWT Filter Start ===");
+        log.debug("Request URI: {}", request.getRequestURI());
 
-            if (token != null && jwtTokenProvider.validateToken(token)) {
-                // JWT에서 userId와 username 추출
-                Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                String username = jwtTokenProvider.getUsernameFromToken(token);
+        //  1. Authorization 헤더에서 토큰 찾기
+        String token = extractTokenFromHeader(request);
 
-                log.debug("JWT 인증 성공 - userId: {}, username: {}", userId, username);
+        //  2. 헤더에 없으면 쿠키에서 찾기
+        if (token == null) {
+            token = extractTokenFromCookie(request);
+            log.debug("Token from cookie: {}", token != null);
+        } else {
+            log.debug("Token from header: present");
+        }
 
-                // CustomUserDetails 생성
-                CustomUserDetails userDetails = new CustomUserDetails(
-                        username,
-                        "",  // 비밀번호는 불필요
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
-                        userId  // 👈 userId 포함!
-                );
+        if (token != null) {
+            try {
+                log.debug("Validating token...");
 
-                // Authentication 객체 생성
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,  // Principal로 CustomUserDetails 설정
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                // 3. Cognito JWT 검증
+                CognitoJwtValidator.CognitoUserInfo userInfo =
+                        cognitoValidator.validateAccessToken(token);
 
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                if (userInfo != null && userInfo.getUsername() != null) {
+                    log.debug("✅ Token valid - username: {}", userInfo.getUsername());
 
-                // SecurityContext에 설정
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    //  4. username → userId 변환 (DB 조회)
+                    String userId = userRepository
+                            .findUserIdByUsername(userInfo.getUsername())
+                            .map(String::valueOf)
+                            .orElse(null);
+
+                    if (userId == null) {
+                        log.warn("⚠️ User not found in DB: {}", userInfo.getUsername());
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    log.debug("✅ Found userId: {}", userId);
+
+                    //  5. 권한 설정
+                    List<SimpleGrantedAuthority> authorities = userInfo.getGroups()
+                            .stream()
+                            .map(g -> new SimpleGrantedAuthority("ROLE_" + g.toUpperCase()))
+                            .collect(Collectors.toList());
+
+                    if (authorities.isEmpty()) {
+                        authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+                    }
+
+                    log.debug("Authorities: {}", authorities);
+
+                    // 6. CustomUserDetails 생성
+                    CustomUserDetails userDetails = new CustomUserDetails(
+                            userInfo.getUsername(),
+                            "",
+                            authorities,
+                            userId  // String 타입
+                    );
+
+                    //  7. Spring Security Context 설정
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails, null, authorities
+                            );
+
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    log.debug("✅ Authentication set successfully");
+                } else {
+                    log.warn("⚠️ Token validation returned null");
+                }
+
+            } catch (Exception e) {
+                log.error("❌ JWT auth error: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             }
-        } catch (Exception e) {
-            log.error("JWT 인증 실패: {}", e.getMessage());
+        } else {
+            log.warn("⚠️ No token found (neither header nor cookie)");
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String extractTokenFromRequest(HttpServletRequest request) {
+    /**
+     *  Authorization 헤더에서 토큰 추출
+     */
+    private String extractTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    /**
+     *  쿠키에서 access_token 추출
+     */
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            return null;
+        }
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
     }
 }
