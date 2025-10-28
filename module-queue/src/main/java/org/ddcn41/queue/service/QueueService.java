@@ -366,7 +366,7 @@ public class QueueService {
      * 토큰 검증 - 사용자 ID와 공연 ID 모두 검증
      */
     @Transactional
-    public boolean validateTokenForBooking(String token, Long userId, Long performanceId) {
+    public boolean validateTokenForBooking(String token, String userId, Long performanceId) {
         if (token == null || token.trim().isEmpty()) {
             return false;
         }

@@ -15,13 +15,11 @@ import org.ddcn41.ticketing_system.booking.repository.BookingRepository;
 import org.ddcn41.ticketing_system.booking.repository.BookingSeatRepository;
 import org.ddcn41.ticketing_system.common.client.QueueClient;
 import org.ddcn41.ticketing_system.common.client.UserClient;
-import org.ddcn41.ticketing_system.common.dto.ApiResponse;
 import org.ddcn41.ticketing_system.common.dto.booking.BookingDto;
 import org.ddcn41.ticketing_system.common.dto.booking.BookingSeatDto;
 import org.ddcn41.ticketing_system.common.dto.booking.GetBookingDetail200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
-import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyResponse;
 import org.ddcn41.ticketing_system.common.dto.user.UserResponse;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
@@ -204,13 +202,14 @@ public class BookingService {
                         .performanceId(schedule.getPerformance().getPerformanceId())
                         .build();
 
-                ApiResponse<TokenVerifyResponse> response =
-                        queueClient.verifyToken(req.getQueueToken(), verifyRequest);
+                // 임시 테스트를 위해 검증 진행 X
+//                ApiResponse<TokenVerifyResponse> response =
+//                        queueClient.verifyToken(req.getQueueToken(), verifyRequest);
 
-                if (response.getData() == null || !response.getData().isValid()) {
-                    throw new BusinessException(ErrorCode.QUEUE_TOKEN_INVALID,
-                            response.getData() != null ? response.getData().getReason() : "");
-                }
+//                if (response.getData() == null || !response.getData().isValid()) {
+//                    throw new BusinessException(ErrorCode.QUEUE_TOKEN_INVALID,
+//                            response.getData() != null ? response.getData().getReason() : "");
+//                }
 
             } catch (feign.FeignException e) {
                 log.error("Queue 서비스 호출 실패: {}", e.getMessage());

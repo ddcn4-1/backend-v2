@@ -7,98 +7,106 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.queue.domain.CustomUserDetails;
-import org.springframework.beans.factory.annotation.Value;
+import org.ddcn41.queue.repository.UserRepository;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private volatile CognitoJwtValidatorLite cognito;
-
-    @Value("${cognito.enabled:true}")
-    private boolean cognitoEnabled;
-
-    @Value("${cognito.issuer:}")
-    private String issuer;
-
-    @Value("${cognito.jwks:}")
-    private String jwks;
-
-    @Value("${cognito.appClientId:}")
-    private String appClientId;
-
-    private CognitoJwtValidatorLite validator() throws Exception {
-        if (cognito == null) {
-            synchronized (this) {
-                if (cognito == null) {
-                    cognito = new CognitoJwtValidatorLite(issuer, jwks, appClientId);
-                }
-            }
-        }
-        return cognito;
-    }
+    private final CognitoJwtValidator cognitoValidator;
+    private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        String h = req.getHeader("Authorization");
+        String token = extractToken(request);
 
-        if (h == null || !h.startsWith("Bearer ")) {
-            chain.doFilter(req, res);
-            return;
-        }
-
-        String token = extractToken(req);
-        if (token != null && cognitoEnabled) {
+        if (token != null) {
             try {
-                //  변경 : JJWT -> CognitoLite
-                CognitoJwtValidatorLite.UserInfo info = validator().validateAccessToken(token);
+                CognitoJwtValidator.CognitoUserInfo userInfo =
+                        cognitoValidator.validateAccessToken(token);
 
-                String username = info.getUsername();
-                if (!StringUtils.hasText(username)) username = info.getSub();
-                Long userId = info.getUserId(); // 커스텀 클레임 없으면 null
+                if (userInfo != null && userInfo.getUsername() != null) {
 
-                if (userId == null) {
-                    chain.doFilter(req, res);
-                    return;
+                    String userId = userRepository
+                            .findUserIdByUsername(userInfo.getUsername())
+                            .map(String::valueOf)
+                            .orElse(null);
+
+                    if (userId == null) {
+                        log.warn("⚠️ User not found in DB: {}", userInfo.getUsername());
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    setAuthentication(userInfo, userId, request);
+
+                    log.debug("✅ Auth success - username: {}, userId: {}",
+                            userInfo.getUsername(), userId);
                 }
 
-                List<SimpleGrantedAuthority> authorities =
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-
-                CustomUserDetails userDetails = new CustomUserDetails(
-                        username, "", authorities, userId
-                );
-
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-
             } catch (Exception e) {
-                log.error("JWT 인증 실패: {}", e.getMessage());
+                log.error("❌ JWT auth error: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
 
-        chain.doFilter(req, res);
+        filterChain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest req) {
-        String h = req.getHeader("Authorization");
-        return (h != null && h.startsWith("Bearer ")) ? h.substring(7) : null;
+    private void setAuthentication(
+            CognitoJwtValidator.CognitoUserInfo userInfo,
+            String userId,
+            HttpServletRequest request
+    ) {
+        List<SimpleGrantedAuthority> authorities = userInfo.getGroups()
+                .stream()
+                .map(g -> new SimpleGrantedAuthority("ROLE_" + g.toUpperCase()))
+                .collect(Collectors.toList());
+
+        if (authorities.isEmpty()) {
+            authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+
+        CustomUserDetails userDetails = new CustomUserDetails(
+                userInfo.getUsername(),
+                "",
+                authorities,
+                userId
+        );
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails, null, authorities
+                );
+
+        authentication.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request)
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
     }
 }
