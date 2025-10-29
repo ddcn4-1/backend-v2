@@ -24,6 +24,7 @@ import org.ddcn41.ticketing_system.common.config.CognitoProperties;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,6 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("v1/auth")
 @Tag(name = "Authentication", description = "사용자 인증 API")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
+@Deprecated
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;

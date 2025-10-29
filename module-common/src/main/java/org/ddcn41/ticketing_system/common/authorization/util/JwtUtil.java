@@ -8,12 +8,15 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.ddcn41.ticketing_system.common.authorization.interfaces.JwtTokenValidator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 
+@Deprecated(forRemoval = true)
 @Component
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class JwtUtil implements JwtTokenValidator {
 
     @Value("${jwt.secret}")

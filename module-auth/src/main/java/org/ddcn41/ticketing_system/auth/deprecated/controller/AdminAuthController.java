@@ -16,6 +16,7 @@ import org.ddcn41.ticketing_system.auth.deprecated.service.AuthAuditService;
 import org.ddcn41.ticketing_system.common.authorization.util.JwtUtil;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.service.UserService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,6 +33,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("v1/admin/auth")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
+@Deprecated
 @Tag(name = "Admin Authentication", description = "APIs for administrator authentication")
 public class AdminAuthController {
 

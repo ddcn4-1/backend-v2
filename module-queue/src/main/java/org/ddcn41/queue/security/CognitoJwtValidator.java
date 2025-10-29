@@ -12,6 +12,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.queue.config.CognitoProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.security.interfaces.RSAPublicKey;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
+@Deprecated(forRemoval = true)
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class CognitoJwtValidator {
 
     private final CognitoProperties properties;

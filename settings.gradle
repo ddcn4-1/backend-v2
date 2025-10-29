@@ -13,6 +13,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)  // 변경: FAIL -> PREFER
     repositories {
         mavenCentral()
+        mavenLocal()
     }
 }
 
@@ -25,3 +26,5 @@ include 'module-queue'
 include 'module-metric'
 include 'module-api'
 include 'module-api-admin'
+
+include 'authorization-spring-boot-starter'

@@ -12,6 +12,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
 
+
     // OpenFeign
     api 'org.springframework.cloud:spring-cloud-starter-openfeign'
 

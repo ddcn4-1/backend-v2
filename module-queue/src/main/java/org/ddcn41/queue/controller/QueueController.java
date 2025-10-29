@@ -24,10 +24,12 @@ import org.ddcn41.queue.dto.response.QueueCheckResponse;
 import org.ddcn41.queue.dto.response.QueueStatusResponse;
 import org.ddcn41.queue.dto.response.TokenIssueResponse;
 import org.ddcn41.queue.service.QueueService;
+import org.ddcn41.starter.authorization.model.BasicCognitoUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -54,9 +56,9 @@ public class QueueController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<QueueCheckResponse>> checkQueueRequirement(
             @Valid @RequestBody TokenRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
-        String userId = extractUserId(authentication);
+        String userId = currentUser.getUserId();
 
         QueueCheckResponse response = queueService.getBookingToken(
                 request.getPerformanceId(),
@@ -75,9 +77,9 @@ public class QueueController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<TokenIssueResponse>> issueToken(
             @Valid @RequestBody TokenIssueRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
-        String userId = extractUserId(authentication);
+        String userId = currentUser.getUserId();
 
         TokenIssueResponse response = queueService.issueQueueToken(
                 userId,
@@ -95,9 +97,9 @@ public class QueueController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<QueueStatusResponse>> activateToken(
             @Valid @RequestBody TokenActivateRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
-        String userId = extractUserId(authentication);
+        String userId =currentUser.getUserId();
 
         QueueStatusResponse response = queueService.activateToken(
                 request.getToken(),
@@ -116,9 +118,9 @@ public class QueueController {
     @Operation(summary = "내 토큰 목록")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<List<QueueStatusResponse>>> getMyTokens(
-            Authentication authentication
+           @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
-        String userId = extractUserId(authentication);
+        String userId = currentUser.getUserId();
         List<QueueStatusResponse> responses = queueService.getUserActiveTokens(userId);
 
         return ResponseEntity.ok(ApiResponse.success("토큰 목록 조회 성공", responses));
@@ -132,10 +134,10 @@ public class QueueController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<String>> sendHeartbeat(
             @RequestBody(required = false) HeartbeatRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
         try {
-            String userId = extractUserId(authentication);
+            String userId = currentUser.getUserId();
 
             if (request != null) {
                 queueService.updateHeartbeat(
@@ -159,9 +161,9 @@ public class QueueController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<String>> cancelToken(
             @PathVariable String token,
-            Authentication authentication
+            @AuthenticationPrincipal BasicCognitoUser currentUser
     ) {
-        String userId = extractUserId(authentication);
+        String userId = currentUser.getUserId();
         queueService.cancelToken(token, userId);
 
         return ResponseEntity.ok(ApiResponse.success("토큰이 취소되었습니다"));
@@ -174,11 +176,11 @@ public class QueueController {
     @Operation(summary = "세션 정보 조회")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<String>> getSessionInfo(
-            Authentication authentication,
+            @AuthenticationPrincipal BasicCognitoUser currentUser,
             HttpServletRequest request
     ) {
-        String username = authentication.getName();
-        String userId = extractUserId(authentication);
+        String username = currentUser.getUsername();
+        String userId = currentUser.getUserId();
         String sessionId = request.getSession().getId();
         String remoteAddr = request.getRemoteAddr();
 
@@ -291,44 +293,45 @@ public class QueueController {
         return ResponseEntity.ok(ApiResponse.success("모든 세션이 초기화되었습니다"));
     }
 
+
     // ========== Helper Methods ==========
-
-    /**
-     * userId 추출 (단일 메서드)
-     */
-    private String extractUserId(Authentication auth) {
-        if (auth == null) {
-            log.warn("⚠️ Authentication is null");
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "인증이 필요합니다"
-            );
-        }
-
-        Object principal = auth.getPrincipal();
-
-        log.debug("Principal type: {}", principal.getClass().getName());
-
-        if (!(principal instanceof CustomUserDetails)) {
-            log.warn("⚠️ Invalid principal type: {}", principal.getClass().getName());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "인증 정보가 올바르지 않습니다"
-            );
-        }
-
-        CustomUserDetails userDetails = (CustomUserDetails) principal;
-        String userId = userDetails.getUserId();
-
-        if (userId == null || userId.isEmpty()) {
-            log.warn("⚠️ UserId is null or empty for user: {}", userDetails.getUsername());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "사용자 정보를 찾을 수 없습니다"
-            );
-        }
-
-        log.debug("✅ Extracted userId: {}", userId);
-        return userId;
-    }
+//  authorization-start로 불필요해짐
+//    /**
+//     * userId 추출 (단일 메서드)
+//     */
+//    private String extractUserId(Authentication auth) {
+//        if (auth == null) {
+//            log.warn("⚠️ Authentication is null");
+//            throw new ResponseStatusException(
+//                    HttpStatus.UNAUTHORIZED,
+//                    "인증이 필요합니다"
+//            );
+//        }
+//
+//        Object principal = auth.getPrincipal();
+//
+//        log.debug("Principal type: {}", principal.getClass().getName());
+//
+//        if (!(principal instanceof CustomUserDetails)) {
+//            log.warn("⚠️ Invalid principal type: {}", principal.getClass().getName());
+//            throw new ResponseStatusException(
+//                    HttpStatus.UNAUTHORIZED,
+//                    "인증 정보가 올바르지 않습니다"
+//            );
+//        }
+//
+//        CustomUserDetails userDetails = (CustomUserDetails) principal;
+//        String userId = userDetails.getUserId();
+//
+//        if (userId == null || userId.isEmpty()) {
+//            log.warn("⚠️ UserId is null or empty for user: {}", userDetails.getUsername());
+//            throw new ResponseStatusException(
+//                    HttpStatus.UNAUTHORIZED,
+//                    "사용자 정보를 찾을 수 없습니다"
+//            );
+//        }
+//
+//        log.debug("✅ Extracted userId: {}", userId);
+//        return userId;
+//    }
 }

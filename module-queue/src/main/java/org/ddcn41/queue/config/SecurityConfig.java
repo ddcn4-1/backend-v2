@@ -2,6 +2,7 @@ package org.ddcn41.queue.config;
 
 import lombok.RequiredArgsConstructor;
 import org.ddcn41.queue.security.JwtAuthFilter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,6 +12,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;

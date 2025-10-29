@@ -28,7 +28,6 @@ import java.util.List;
 public class AdminPerformanceController {
     private final AdminPerformanceService adminPerformanceService;
 
-
     @Operation(summary = "모든 공연 조회", description = "어드민 화면에서 공연 전체 조회 시 사용")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Success get all performances", content = @Content(schema = @Schema(implementation = AdminPerformanceResponse.class), mediaType = "application/json"))

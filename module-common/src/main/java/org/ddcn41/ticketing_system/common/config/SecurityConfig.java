@@ -3,6 +3,7 @@ package org.ddcn41.ticketing_system.common.config;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.common.authorization.filter.JwtAuthenticationFilter;
 import org.ddcn41.ticketing_system.common.authorization.interfaces.CustomUserDetailsProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +21,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@Deprecated(forRemoval = true)
 @Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties(CognitoProperties.class)
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class SecurityConfig {
 
     private final CustomUserDetailsProvider userDetailsProvider;

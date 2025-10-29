@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ddcn41.starter.authorization.model.BasicCognitoUser;
 import org.ddcn41.ticketing_system.booking.dto.request.CancelBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.request.CreateBookingRequestDto;
 import org.ddcn41.ticketing_system.booking.dto.response.CancelBooking200ResponseDto;
@@ -22,6 +23,7 @@ import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,10 +47,9 @@ public class BookingController {
             @ApiResponse(responseCode = "404", description = "Related resource not found", content = @Content)
     })
     public ResponseEntity<CreateBookingResponseDto> createBooking(
-            @Valid @RequestBody CreateBookingRequestDto body) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userId = auth != null ? auth.getName() : null;
-        CreateBookingResponseDto res = bookingService.createBooking(userId, body);
+            @Valid @RequestBody CreateBookingRequestDto body,@AuthenticationPrincipal BasicCognitoUser currentUser) {
+
+        CreateBookingResponseDto res = bookingService.createBooking(currentUser.getUserId(), body);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
@@ -64,10 +65,9 @@ public class BookingController {
     })
     public ResponseEntity<GetBookingDetail200ResponseDto> getMyBookingDetail(
             @Parameter(description = "Booking ID", required = true)
-            @PathVariable Long bookingId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userId = auth != null ? auth.getName() : null;
-        return ResponseEntity.ok(bookingService.getUserBookingDetail(userId, bookingId));
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal BasicCognitoUser currentUser) {
+        return ResponseEntity.ok(bookingService.getUserBookingDetail(currentUser.getUserId(), bookingId));
     }
 
     @GetMapping("/me")
@@ -76,7 +76,8 @@ public class BookingController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK",
                     content = @Content(schema = @Schema(implementation = GetBookings200ResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
     })
     public ResponseEntity<GetBookings200ResponseDto> getMyBookings(
             @Parameter(description = "Filter by booking status (optional)")
@@ -85,18 +86,21 @@ public class BookingController {
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @Parameter(description = "Items per page", example = "20")
             @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit,
-            HttpServletRequest request) {
+            @AuthenticationPrincipal BasicCognitoUser currentUser) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String authHeader = request.getHeader("Authorization");
-        log.info("[CONTROLLER] Authorization header: {}", authHeader != null ? "Present" : "Missing");
-        if (auth == null || !auth.isAuthenticated()) {
-            log.error("[CONTROLLER] Authentication check failed - returning 401");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        String userId = auth.getName();
-        log.info("[CONTROLLER] Processing bookings for user: {}", userId);
-        return ResponseEntity.ok(bookingService.getUserBookings(userId, status, page, limit));
+        log.info("[CONTROLLER] Processing bookings for user: {} ({})",
+                currentUser.getUserId(), currentUser.getUsername());
+
+        // 추가적인 사용자 정보 활용 가능
+        log.debug("[CONTROLLER] User details - Email: {}, Groups: {}",
+                currentUser.getEmail(), currentUser.getGroups());
+
+        return ResponseEntity.ok(bookingService.getUserBookings(
+                currentUser.getUserId(),
+                status,
+                page,
+                limit
+        ));
     }
 
     @PatchMapping("/{bookingId}/cancel")
@@ -113,9 +117,8 @@ public class BookingController {
     public ResponseEntity<CancelBooking200ResponseDto> cancelBooking(
             @Parameter(description = "Booking ID", required = true)
             @PathVariable Long bookingId,
-            @Valid @RequestBody(required = false) CancelBookingRequestDto body) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userId = auth != null ? auth.getName() : null;
-        return ResponseEntity.ok(bookingService.cancelBooking(bookingId, body, userId));
+            @Valid @RequestBody(required = false) CancelBookingRequestDto body,
+            @AuthenticationPrincipal BasicCognitoUser currentUser) {
+        return ResponseEntity.ok(bookingService.cancelBooking(bookingId, body, currentUser.getUserId()));
     }
 }

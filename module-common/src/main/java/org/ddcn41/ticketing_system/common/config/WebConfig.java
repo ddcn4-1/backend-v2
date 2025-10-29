@@ -6,6 +6,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 // ⭐ Profile을 'never'로 변경하여 실행되지 않도록 설정
+@Deprecated(forRemoval = true)
 @Configuration
 @Profile("never")  // 이전: "dev"
 public class WebConfig implements WebMvcConfigurer {
@@ -16,6 +17,8 @@ public class WebConfig implements WebMvcConfigurer {
     }
 }
 
+
+@Deprecated(forRemoval = true)
 @Configuration
 @Profile("never")
 class ProdWebConfig implements WebMvcConfigurer {

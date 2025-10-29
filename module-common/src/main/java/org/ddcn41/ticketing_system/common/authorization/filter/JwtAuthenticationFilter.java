@@ -12,6 +12,7 @@ import org.ddcn41.ticketing_system.common.authorization.interfaces.TokenBlacklis
 import org.ddcn41.ticketing_system.common.authorization.validator.CognitoJwtValidator;
 import org.ddcn41.ticketing_system.common.config.CognitoProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -27,8 +28,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Deprecated(forRemoval = true)
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenValidator jwtTokenValidator;

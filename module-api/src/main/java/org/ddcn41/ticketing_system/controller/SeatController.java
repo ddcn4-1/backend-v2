@@ -2,6 +2,7 @@ package org.ddcn41.ticketing_system.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.starter.authorization.model.BasicCognitoUser;
 import org.ddcn41.ticketing_system.common.dto.ApiResponse;
 import org.ddcn41.ticketing_system.seat.dto.request.SeatConfirmRequest;
 import org.ddcn41.ticketing_system.seat.dto.request.SeatLockRequest;
@@ -14,6 +15,7 @@ import org.ddcn41.ticketing_system.user.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -73,10 +75,10 @@ public class SeatController {
     public ResponseEntity<ApiResponse<SeatLockResponse>> lockScheduleSeats(
             @PathVariable Long scheduleId,
             @Valid @RequestBody SeatLockRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal BasicCognitoUser currentUser) {
 
         // 보안 : 인증된 사용자 정보에서 userId 추출
-        String username = authentication.getName();
+        String username = currentUser.getUsername();
         User authenticatedUser = userService.findByUsername(username);
 
         // 관리자가 아닌 경우, 요청의 userId와 인증된 사용자가 일치하는지 검증
@@ -125,10 +127,10 @@ public class SeatController {
     public ResponseEntity<ApiResponse<Boolean>> releaseScheduleSeats(
             @PathVariable Long scheduleId,
             @Valid @RequestBody SeatReleaseRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal BasicCognitoUser currentUser) {
 
         // 보안 수정: 인증된 사용자 정보에서 userId 추출
-        String username = authentication.getName();
+        String username = currentUser.getUsername();
         User authenticatedUser = userService.findByUsername(username);
 
         // 관리자가 아닌 경우, 요청의 userId와 인증된 사용자가 일치하는지 검증
@@ -173,10 +175,10 @@ public class SeatController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Boolean>> confirmSeats(
             @Valid @RequestBody SeatConfirmRequest request,
-            Authentication authentication) {
+           @AuthenticationPrincipal BasicCognitoUser currentUser) {
 
         //  인증된 사용자 정보에서 userId 추출
-        String username = authentication.getName();
+        String username = currentUser.getUsername();
         User authenticatedUser = userService.findByUsername(username);
 
         // 관리자가 아닌 경우, 요청의 userId와 인증된 사용자가 일치하는지 검증
