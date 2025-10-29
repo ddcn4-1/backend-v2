@@ -17,10 +17,10 @@ public class BasicCognitoUser implements UserDetails {
     @Getter
     private final String userId;
     private final List<String> groups;
-    private final Map<String, Object> attributes;
+    private final transient Map<String, Object> attributes;
     @Getter
     private final String token;
-    private final Claims claims;
+    private final transient Claims claims;
 
     // 기본 생성자 추가 (Spring이 요구함)
     public BasicCognitoUser() {
