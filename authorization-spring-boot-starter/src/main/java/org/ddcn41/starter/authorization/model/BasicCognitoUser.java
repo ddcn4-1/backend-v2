@@ -103,10 +103,10 @@ public class BasicCognitoUser implements UserDetails {
     public Boolean isEmailVerified() {
         if (claims != null) {
             Object emailVerified = claims.get("email_verified");
-            if (emailVerified instanceof Boolean) {
-                return (Boolean) emailVerified;
-            } else if (emailVerified instanceof String) {
-                return "true".equalsIgnoreCase((String) emailVerified);
+            if (emailVerified instanceof Boolean emailboolen) {
+                return emailboolen;
+            } else if (emailVerified instanceof String emailboolen) {
+                return "true".equalsIgnoreCase(emailboolen);
             }
         }
         return null;
