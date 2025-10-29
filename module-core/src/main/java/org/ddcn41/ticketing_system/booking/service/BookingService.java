@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,127 +64,157 @@ public class BookingService {
 
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String userId, CreateBookingRequestDto req) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 유저 + 스케줄 조회
+        User user = findUser(userId);
+        PerformanceSchedule schedule = findSchedule(req.getScheduleId());
 
-        PerformanceSchedule schedule = scheduleRepository.findById(req.getScheduleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
-
-        // 대기열 토큰 검증 추가 (기존 seat_map_json 로직 이전에)
+        // 대기열 토큰 검증 todo: 임시 정지 상태
         validateQueueTokenIfRequired(req, user, schedule);
 
-        // seat_map_json 파싱 (검증/가격)
-        ObjectMapper om = new ObjectMapper();
-        JsonNode root;
-        try {
-            String seatMapJson = schedule.getPerformance().getVenue().getSeatMapJson();
-            root = om.readTree(seatMapJson == null ? "{}" : seatMapJson);
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP);
-        }
-
+        // 좌석 매핑 및 검증
+        JsonNode root = parseSeatMap(schedule);
         JsonNode sections = root.path("sections");
         JsonNode pricingNode = root.path("pricing");
 
-        // 좌석 선택을 실제 ScheduleSeat로 매핑 및 검증
-        List<ScheduleSeat> requestedSeats = req.getSeats().stream().map(sel -> {
-            String grade = safeUpper(sel.getGrade());
-            String zone = safeUpper(sel.getZone());
-            String rowLabel = safeUpper(sel.getRowLabel());
-            String colNum = sel.getColNum();
+        List<ScheduleSeat> requestedSeats = mapAndValidateSeats(req, schedule, sections, pricingNode);
 
-            boolean validByJson = validateBySeatMap(sections, grade, zone, rowLabel, colNum);
-            if (!validByJson) {
-                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, String.format("유효하지 않은 좌석 지정: %s/%s-%s%s", grade, zone, rowLabel, colNum));
-            }
+        // 좌석 락킹 및 가용 좌석 감소
+        lockSeatsAndUpdateAvailability(requestedSeats, schedule);
 
-            ScheduleSeat seat = scheduleSeatRepository.findBySchedule_ScheduleIdAndZoneAndRowLabelAndColNum(
-                    schedule.getScheduleId(), zone, rowLabel, colNum);
-            if (seat == null) {
-                throw new BusinessException(ErrorCode.SEAT_NOT_FOUND, String.format("존재하지 않는 좌석: %s/%s-%s%s", grade, zone, rowLabel, colNum));
-            }
-            if (!safeUpper(seat.getGrade()).equals(grade) || !safeUpper(seat.getZone()).equals(zone)) {
-                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, "좌석의 등급/구역 정보가 요청과 일치하지 않습니다");
-            }
-            BigDecimal price = priceByGrade(pricingNode, grade);
-            if (price != null) {
-                seat.setPrice(price);
-            }
-            if (seat.getStatus() != ScheduleSeat.SeatStatus.AVAILABLE) {
-                throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE, "예약 불가능한 좌석이 포함되어 있습니다: " + seat.getSeatId());
-            }
-            seat.setStatus(ScheduleSeat.SeatStatus.LOCKED);
-            return seat;
-        }).toList();
+        // 예매 엔티티 생성
+        Booking booking = createBookingEntity(user, schedule, requestedSeats);
 
-        // 낙관적 락 검증을 커밋 전에 강제 수행 (flush 시 버전 충돌 발생 가능)
-        // NOTE: 커밋 시 자동 flush로도 충분하면 이 flush는 생략 가능
+        // 대기열 토큰 사용
+        processQueueToken(req, user);
+
+        // BookingSeat 생성
+        List<BookingSeat> savedSeats = saveBookingSeats(booking, requestedSeats);
+        booking.setBookingSeats(savedSeats);
+
+        // 좌석 상태 BOOKED로 전환
+        updateSeatStatusToBooked(requestedSeats);
+
+        // 감사 로그 기록
+        bookingAuditService.logBookingCreated(user, booking,
+                requestedSeats.stream().map(ScheduleSeat::getSeatId).toList());
+
+        return toCreateResponse(booking);
+    }
+
+    private User findUser(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private PerformanceSchedule findSchedule(Long scheduleId) {
+        return scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
+    }
+
+    private JsonNode parseSeatMap(PerformanceSchedule schedule) {
         try {
-            scheduleSeatRepository.saveAll(requestedSeats);
+            ObjectMapper om = new ObjectMapper();
+            String seatMapJson = schedule.getPerformance().getVenue().getSeatMapJson();
+            return om.readTree(seatMapJson == null ? "{}" : seatMapJson);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP);
+        }
+    }
+    private List<ScheduleSeat> mapAndValidateSeats(CreateBookingRequestDto req,
+                                                   PerformanceSchedule schedule,
+                                                   JsonNode sections,
+                                                   JsonNode pricingNode) {
+        return req.getSeats().stream()
+                .map(sel -> {
+                    String grade = safeUpper(sel.getGrade());
+                    String zone = safeUpper(sel.getZone());
+                    String rowLabel = safeUpper(sel.getRowLabel());
+                    String colNum = sel.getColNum();
+
+                    if (!validateBySeatMap(sections, grade, zone, rowLabel, colNum)) {
+                        throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE,
+                                String.format("유효하지 않은 좌석: %s/%s-%s%s", grade, zone, rowLabel, colNum));
+                    }
+
+                    ScheduleSeat seat = scheduleSeatRepository.findBySchedule_ScheduleIdAndZoneAndRowLabelAndColNum(
+                            schedule.getScheduleId(), zone, rowLabel, colNum);
+                    if (seat == null) throw new BusinessException(ErrorCode.SEAT_NOT_FOUND);
+                    if (!safeUpper(seat.getGrade()).equals(grade)
+                            || !safeUpper(seat.getZone()).equals(zone)) {
+                        throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE);
+                    }
+
+                    BigDecimal price = priceByGrade(pricingNode, grade);
+                    if (price != null) seat.setPrice(price);
+                    if (seat.getStatus() != ScheduleSeat.SeatStatus.AVAILABLE) {
+                        throw new BusinessException(ErrorCode.SEAT_NOT_AVAILABLE);
+                    }
+
+                    seat.setStatus(ScheduleSeat.SeatStatus.LOCKED);
+                    return seat;
+                })
+                .toList();
+    }
+
+    private void lockSeatsAndUpdateAvailability(List<ScheduleSeat> seats, PerformanceSchedule schedule) {
+        try {
+            scheduleSeatRepository.saveAll(seats);
             scheduleSeatRepository.flush();
-            // 좌석을 AVAILABLE -> LOCKED로 변경한 수만큼 가용 좌석 카운터 감소
-            if (!requestedSeats.isEmpty()) {
-                int affected = scheduleRepository.decrementAvailableSeats(req.getScheduleId(), requestedSeats.size());
-                if (affected == 0) {
-                    throw new BusinessException(ErrorCode.INSUFFICIENT_SEATS);
-                }
-                scheduleRepository.refreshScheduleStatus(req.getScheduleId());
+
+            if (!seats.isEmpty()) {
+                int affected = scheduleRepository.decrementAvailableSeats(schedule.getScheduleId(), seats.size());
+                if (affected == 0) throw new BusinessException(ErrorCode.INSUFFICIENT_SEATS);
+                scheduleRepository.refreshScheduleStatus(schedule.getScheduleId());
             }
-        } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException e) {
             throw new BusinessException(ErrorCode.SEAT_ALREADY_BOOKED);
         }
+    }
 
-
-        BigDecimal total = requestedSeats.stream()
+    private Booking createBookingEntity(User user, PerformanceSchedule schedule, List<ScheduleSeat> seats) {
+        BigDecimal total = seats.stream()
                 .map(ScheduleSeat::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        String bookingNumber = "DDCN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
         Booking booking = Booking.builder()
-                .bookingNumber(bookingNumber)
+                .bookingNumber("DDCN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .userId(user.getUserId())
                 .schedule(schedule)
-                .seatCount(requestedSeats.size())
+                .seatCount(seats.size())
                 .totalAmount(total)
                 .status(BookingStatus.CONFIRMED)
                 .build();
 
-        Booking saved = bookingRepository.save(booking);
+        return bookingRepository.save(booking);
+    }
 
-        // 예매 완료 시 토큰 사용 - 호출
-        if (req.getQueueToken() != null && !req.getQueueToken().trim().isEmpty()) {
-            try {
-                queueClient.useToken(req.getQueueToken());
-                log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", user.getUsername(), req.getQueueToken());
-            } catch (Exception e) {
-                log.warn("토큰 사용 처리 중 오류 발생: {}", e.getMessage());
-                // 예매는 완료되었으므로 로그만 남기고 계속 진행
-            }
+    private void processQueueToken(CreateBookingRequestDto req, User user) {
+        if (req.getQueueToken() == null || req.getQueueToken().trim().isEmpty()) return;
+
+        try {
+            queueClient.useToken(req.getQueueToken());
+            log.info("토큰 사용 완료 - 사용자: {}, 토큰: {}", user.getUsername(), req.getQueueToken());
+        } catch (Exception e) {
+            log.warn("토큰 사용 처리 중 오류 발생: {}", e.getMessage());
         }
+    }
 
-
-        // 예약 좌석 정보 생성 (좌석 상태 변경은 하지 않음)
-        List<BookingSeat> savedSeats = requestedSeats.stream()
+    private List<BookingSeat> saveBookingSeats(Booking booking, List<ScheduleSeat> seats) {
+        return seats.stream()
                 .map(seat -> BookingSeat.builder()
-                        .booking(saved)
+                        .booking(booking)
                         .seat(seat)
                         .seatPrice(seat.getPrice())
                         .build())
                 .map(bookingSeatRepository::save)
                 .toList();
-
-        saved.setBookingSeats(savedSeats);
-
-        // 좌석을 최종 예약 상태로 전환 (이미 LOCKED 상태까지 검증 및 카운터 반영 완료)
-        requestedSeats.forEach(seat -> seat.setStatus(ScheduleSeat.SeatStatus.BOOKED));
-        scheduleSeatRepository.saveAll(requestedSeats);
-
-        List<Long> seatIds = requestedSeats.stream().map(ScheduleSeat::getSeatId).toList();
-        bookingAuditService.logBookingCreated(user, saved, seatIds);
-
-        return toCreateResponse(saved);
     }
+
+    private void updateSeatStatusToBooked(List<ScheduleSeat> seats) {
+        seats.forEach(seat -> seat.setStatus(ScheduleSeat.SeatStatus.BOOKED));
+        scheduleSeatRepository.saveAll(seats);
+    }
+
 
     /**
      * 대기열 토큰 검증 - 호출
