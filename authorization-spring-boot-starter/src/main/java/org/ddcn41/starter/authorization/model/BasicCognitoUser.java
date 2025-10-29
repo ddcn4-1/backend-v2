@@ -109,7 +109,7 @@ public class BasicCognitoUser implements UserDetails {
                 return "true".equalsIgnoreCase(emailboolen);
             }
         }
-        return null;
+        return false;
     }
 
     // 헬퍼 메서드들
