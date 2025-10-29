@@ -58,9 +58,8 @@ public class TokenBlacklistService {
     public boolean isBlacklisted(String token) {
         try {
             String tokenKey = generateKey(token);
-            Boolean exists = redisTemplate.hasKey(tokenKey);
 
-            boolean blacklisted = exists != null && exists;
+            boolean blacklisted = redisTemplate.hasKey(tokenKey);
 
             if (blacklisted) {
                 logger.debug("Token found in blacklist");
@@ -141,21 +140,6 @@ public class TokenBlacklistService {
         } catch (Exception e) {
             logger.error("Failed to remove token from blacklist: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to remove token from blacklist", e);
-        }
-    }
-
-    /**
-     * 만료된 블랙리스트 엔트리 정리 (스케줄러에서 사용)
-     */
-    public void cleanupExpiredEntries() {
-        try {
-            String pattern = jwtProperties.getBlacklist().getRedis().getKeyPrefix() + "*";
-            // 실제 구현에서는 SCAN을 사용하여 대량의 키를 안전하게 처리
-
-            logger.info("Blacklist cleanup completed");
-
-        } catch (Exception e) {
-            logger.error("Failed to cleanup expired blacklist entries: {}", e.getMessage(), e);
         }
     }
 

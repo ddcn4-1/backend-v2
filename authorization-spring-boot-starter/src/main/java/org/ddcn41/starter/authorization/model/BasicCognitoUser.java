@@ -44,19 +44,6 @@ public class BasicCognitoUser implements UserDetails {
         this.attributes = new HashMap<>(claims);
     }
 
-    // 기존 호환성을 위한 생성자 (deprecated)
-    @Deprecated
-    public BasicCognitoUser(String username, String email, String userId,
-                            List<String> groups, Map<String, Object> attributes, String token) {
-        this.username = username;
-        this.email = email;
-        this.userId = userId;
-        this.groups = groups != null ? groups : List.of();
-        this.attributes = attributes != null ? new HashMap<>(attributes) : new HashMap<>();
-        this.token = token;
-        this.claims = null;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return groups.stream()
@@ -75,26 +62,11 @@ public class BasicCognitoUser implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
     public boolean isCredentialsNonExpired() {
         if (claims != null) {
             Date expiration = claims.getExpiration();
             return expiration == null || expiration.after(new Date());
         }
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
         return true;
     }
 
@@ -104,10 +76,6 @@ public class BasicCognitoUser implements UserDetails {
 
     public Map<String, Object> getAttributes() {
         return new HashMap<>(attributes);
-    }
-
-    public Claims getClaims() {
-        return claims;
     }
 
     public Object getAttribute(String key) {
@@ -151,7 +119,6 @@ public class BasicCognitoUser implements UserDetails {
         return value != null ? value.toString() : defaultValue;
     }
 
-    @SuppressWarnings("unchecked")
     private List<String> extractGroups(Claims claims) {
         if (claims == null) return List.of();
 

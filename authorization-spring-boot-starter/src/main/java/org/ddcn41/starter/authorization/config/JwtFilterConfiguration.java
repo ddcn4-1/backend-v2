@@ -7,7 +7,6 @@ import org.ddcn41.starter.authorization.validator.CognitoJwtValidator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 
 import java.util.Optional;
 

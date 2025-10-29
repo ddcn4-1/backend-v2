@@ -4,6 +4,7 @@ package org.ddcn41.starter.authorization.validator;
 import io.jsonwebtoken.*;
 import org.ddcn41.starter.authorization.model.BasicCognitoUser;
 import org.ddcn41.starter.authorization.properties.JwtProperties;
+import org.ddcn41.starter.authorization.properties.JwtProperties.Cognito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -120,27 +121,7 @@ public class CognitoJwtValidator {
      * Claims 추가 검증
      */
     private void validateClaims(Claims claims) {
-        JwtProperties.Cognito cognito = jwtProperties.getCognito();
-
-        // issuer 검증
-        if (cognito.isValidateIssuer()) {
-            String expectedIssuer = cognito.getExpectedIssuer();
-            String actualIssuer = claims.getIssuer();
-
-            if (!expectedIssuer.equals(actualIssuer)) {
-                throw new JwtException("Invalid issuer. Expected: " + expectedIssuer + ", Actual: " + actualIssuer);
-            }
-        }
-
-        // audience 검증 (client_id)
-        if (cognito.isValidateAudience()) {
-            String expectedAudience = cognito.getClientId();
-            String actualAudience = claims.getAudience();
-
-            if (!expectedAudience.equals(actualAudience)) {
-                throw new JwtException("Invalid audience. Expected: " + expectedAudience + ", Actual: " + actualAudience);
-            }
-        }
+        Cognito cognito = getCognito(claims);
 
         // token_use 검증 (id token인지 확인)
         if (cognito.isValidateTokenUse()) {
@@ -167,5 +148,30 @@ public class CognitoJwtValidator {
         if (issuedAt.getTime() > now.getTime() + clockSkewMillis) {
             throw new JwtException("Token used before issued time");
         }
+    }
+
+    private Cognito getCognito(Claims claims) {
+        Cognito cognito = jwtProperties.getCognito();
+
+        // issuer 검증
+        if (cognito.isValidateIssuer()) {
+            String expectedIssuer = cognito.getExpectedIssuer();
+            String actualIssuer = claims.getIssuer();
+
+            if (!expectedIssuer.equals(actualIssuer)) {
+                throw new JwtException("Invalid issuer. Expected: " + expectedIssuer + ", Actual: " + actualIssuer);
+            }
+        }
+
+        // audience 검증 (client_id)
+        if (cognito.isValidateAudience()) {
+            String expectedAudience = cognito.getClientId();
+            String actualAudience = claims.getAudience();
+
+            if (!expectedAudience.equals(actualAudience)) {
+                throw new JwtException("Invalid audience. Expected: " + expectedAudience + ", Actual: " + actualAudience);
+            }
+        }
+        return cognito;
     }
 }

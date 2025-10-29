@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger jwtlogger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtProperties jwtProperties;
@@ -45,20 +45,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        System.out.println("=== JWT Filter START: " + requestURI + " ===");
-        logger.info("=== JWT Filter processing: {} ===", requestURI);
+        jwtlogger.info("=== JWT Filter processing: {} ===", requestURI);
 
 
         try {
             // JWT 토큰 추출
             String jwt = extractJwtFromRequest(request);
-            logger.info("JWT Token extracted: {}", jwt != null ? "Present" : "Not found");
+            jwtlogger.info("JWT Token extracted: {}", jwt != null ? "Present" : "Not found");
 
             if (jwt != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 // 블랙리스트 확인
                 if (isTokenBlacklisted(jwt)) {
-                    logger.debug("Token is blacklisted, rejecting request");
+                    jwtlogger.debug("Token is blacklisted, rejecting request");
                     handleAuthenticationFailure(response, "Token is blacklisted");
                     return;
                 }
@@ -75,24 +74,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                logger.info("Authentication set successfully for user: {}", userDetails.getUsername());
-                logger.info("Authorities for {}: {}", userDetails.getUsername(), userDetails.getAuthorities());
+                jwtlogger.info("Authentication set successfully for user: {}", userDetails.getUsername());
+                jwtlogger.info("Authorities for {}: {}", userDetails.getUsername(), userDetails.getAuthorities());
                 // SecurityContext에 인증 정보 설정
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                logger.debug("JWT authentication successful for user: {}", userDetails.getUsername());
+                jwtlogger.debug("JWT authentication successful for user: {}", userDetails.getUsername());
 
                 // 요청 속성에 사용자 정보 추가 (필요시)
                 request.setAttribute("currentUser", userDetails);
             }
 
         } catch (JwtException e) {
-            logger.debug("JWT validation failed: {}", e.getMessage());
+            jwtlogger.debug("JWT validation failed: {}", e.getMessage());
             // 인증 실패시에도 필터 체인을 계속 진행 (익명 사용자로 처리)
             SecurityContextHolder.clearContext();
 
         } catch (Exception e) {
-            logger.error("Unexpected error in JWT authentication filter: {}", e.getMessage(), e);
+            jwtlogger.error("Unexpected error in JWT authentication filter: {}", e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
 
@@ -115,14 +114,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(jwtFromCookie)) {
             return jwtFromCookie;
         }
-
-        // 3. Query Parameter에서 추출 (선택적, 보안상 권장하지 않음)
-        String jwtFromParam = request.getParameter("token");
-        if (StringUtils.hasText(jwtFromParam)) {
-            logger.warn("JWT token found in query parameter - this is not recommended for security reasons");
-            return jwtFromParam;
-        }
-
         return null;
     }
 
