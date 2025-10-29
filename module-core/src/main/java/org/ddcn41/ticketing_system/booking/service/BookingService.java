@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -547,7 +548,6 @@ public class BookingService {
         return value == null ? null : value.trim().toUpperCase();
     }
 
-    //todo: Refactor this method to reduce its Cognitive Complexity
     private static boolean validateBySeatMap(JsonNode sections, String grade, String zone, String rowLabel, String colNum) {
         if (!sections.isArray() || rowLabel == null || colNum == null) {
             return false;
@@ -559,44 +559,52 @@ public class BookingService {
         String normalizedZone = zone == null ? null : zone.trim().toUpperCase();
 
         for (JsonNode section : sections) {
-            int rows = section.path("rows").asInt(0);
-            int cols = section.path("cols").asInt(0);
-            if (rows <= 0 || cols <= 0) {
+            if (!isValidSection(section, normalizedGrade, normalizedZone)) {
                 continue;
             }
 
-            String sectionRowStart = safeUpper(textOrNull(section, "rowLabelFrom"));
-            if (sectionRowStart == null || sectionRowStart.isBlank()) {
-                continue;
-            }
-
-            String sectionGrade = safeUpper(textOrNull(section, "grade"));
-            String sectionZone = safeUpper(textOrNull(section, "zone"));
-
-            if (normalizedGrade != null && !normalizedGrade.isBlank() && !normalizedGrade.equals(sectionGrade)) {
-                continue;
-            }
-            if (normalizedZone != null && !normalizedZone.isBlank() && !normalizedZone.equals(sectionZone)) {
-                continue;
-            }
-
-            int seatStart = section.path("seatStart").asInt(1);
-
-            for (int r = 0; r < rows; r++) {
-                String currentRow = incrementAlpha(sectionRowStart, r);
-                if (!currentRow.equals(normalizedRow)) {
-                    continue;
-                }
-
-                for (int c = 0; c < cols; c++) {
-                    String currentCol = String.valueOf(seatStart + c);
-                    if (currentCol.equals(normalizedCol)) {
-                        return true;
-                    }
-                }
+            if (isSeatInSection(section, normalizedRow, normalizedCol)) {
+                return true;
             }
         }
 
+        return false;
+    }
+
+    private static boolean isValidSection(JsonNode section, String normalizedGrade, String normalizedZone) {
+        int rows = section.path("rows").asInt(0);
+        int cols = section.path("cols").asInt(0);
+        if (rows <= 0 || cols <= 0) return false;
+
+        String sectionRowStart = safeUpper(textOrNull(section, "rowLabelFrom"));
+        if (sectionRowStart == null || sectionRowStart.isBlank()) return false;
+
+        String sectionGrade = safeUpper(textOrNull(section, "grade"));
+        String sectionZone = safeUpper(textOrNull(section, "zone"));
+
+        boolean gradeMatch = normalizedGrade == null || normalizedGrade.isBlank() || normalizedGrade.equals(sectionGrade);
+        boolean zoneMatch = normalizedZone == null || normalizedZone.isBlank() || normalizedZone.equals(sectionZone);
+
+        return gradeMatch && zoneMatch;
+    }
+
+    private static boolean isSeatInSection(JsonNode section, String targetRow, String targetCol) {
+        int rows = section.path("rows").asInt(0);
+        int cols = section.path("cols").asInt(0);
+        int seatStart = section.path("seatStart").asInt(1);
+        String rowStart = safeUpper(textOrNull(section, "rowLabelFrom"));
+
+        for (int r = 0; r < rows; r++) {
+            String currentRow = incrementAlpha(rowStart, r);
+            if (!currentRow.equals(targetRow)) continue;
+
+            int colNum = Integer.parseInt(targetCol);
+            int minCol = seatStart;
+            int maxCol = seatStart + cols - 1;
+
+            // 숫자 범위만 비교하므로 내부 루프 제거 (복잡도 ↓)
+            return colNum >= minCol && colNum <= maxCol;
+        }
         return false;
     }
 
