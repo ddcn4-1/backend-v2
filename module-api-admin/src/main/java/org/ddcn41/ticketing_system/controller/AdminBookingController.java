@@ -9,9 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookingDetail200ResponseDto;
-import org.ddcn41.ticketing_system.booking.dto.response.GetBookings200ResponseDto;
-import org.ddcn41.ticketing_system.booking.service.BookingService;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookingDetail200ResponseDto;
+import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
+import org.ddcn41.ticketing_system.service.AdminBookingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Admin Bookings", description = "Admin APIs for booking management")
 public class AdminBookingController {
 
-    private final BookingService bookingService;
+    private final AdminBookingService adminBookingService;
 
     @GetMapping
     @Operation(summary = "List all bookings (Admin)", description = "Lists all bookings filtered by status with pagination - Admin only")
@@ -39,7 +39,7 @@ public class AdminBookingController {
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @Parameter(description = "Items per page", example = "20")
             @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit) {
-        return ResponseEntity.ok(bookingService.getBookings(status, page, limit));
+        return ResponseEntity.ok(adminBookingService.getBookings(status, page, limit));
     }
 
     @GetMapping("/{bookingId}")
@@ -55,7 +55,7 @@ public class AdminBookingController {
     public ResponseEntity<GetBookingDetail200ResponseDto> getAnyBookingDetail(
             @Parameter(description = "Booking ID", required = true)
             @PathVariable Long bookingId) {
-        return ResponseEntity.ok(bookingService.getBookingDetail(bookingId));
+        return ResponseEntity.ok(adminBookingService.getBookingDetailById(bookingId));
     }
 
 }

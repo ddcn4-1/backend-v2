@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.ddcn41.ticketing_system.booking.dto.BookingSeatDto;
+import org.ddcn41.ticketing_system.common.dto.booking.BookingSeatDto;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;

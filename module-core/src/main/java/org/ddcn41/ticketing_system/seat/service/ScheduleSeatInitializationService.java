@@ -3,11 +3,14 @@ package org.ddcn41.ticketing_system.seat.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.ddcn41.ticketing_system.common.dto.seat.InitializeSeatsResponse;
+import org.ddcn41.ticketing_system.common.exception.BusinessException;
+import org.ddcn41.ticketing_system.common.exception.ErrorCode;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
-import org.ddcn41.ticketing_system.seat.dto.response.InitializeSeatsResponse;
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
 import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ScheduleSeatInitializationService {
+    private final ObjectProvider<ScheduleSeatInitializationService> scheduleSeatInitializationServiceProvider;
 
     private final PerformanceScheduleRepository scheduleRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
@@ -28,11 +32,13 @@ public class ScheduleSeatInitializationService {
      */
     @Transactional
     public List<InitializeSeatsResponse> initializeAll(boolean dryRun) {
+        ScheduleSeatInitializationService self = scheduleSeatInitializationServiceProvider.getObject();
+
         List<PerformanceSchedule> schedules = scheduleRepository.findAll();
         List<InitializeSeatsResponse> results = new ArrayList<>();
         for (PerformanceSchedule s : schedules) {
             try {
-                results.add(initialize(s.getScheduleId(), dryRun));
+                results.add(self.initialize(s.getScheduleId(), dryRun));
             } catch (RuntimeException ex) {
                 // 개별 스케줄 실패는 전체 중단 없이 계속 진행
                 results.add(InitializeSeatsResponse.builder()
@@ -50,22 +56,24 @@ public class ScheduleSeatInitializationService {
     @Transactional
     public InitializeSeatsResponse initialize(Long scheduleId, boolean dryRun) {
         PerformanceSchedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("스케줄을 찾을 수 없습니다: " + scheduleId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND, "scheduleId: " + scheduleId));
 
-        if (schedule.getPerformance() == null || schedule.getPerformance().getVenue() == null) {
-            throw new IllegalArgumentException("스케줄에 공연장 정보가 없습니다: " + scheduleId);
+        if (schedule.getPerformance() == null) {
+            throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND, "scheduleId: " + scheduleId);
+        } else if (schedule.getPerformance().getVenue() == null) {
+            throw new BusinessException(ErrorCode.VENUE_NOT_FOUND, "scheduleId: " + scheduleId);
         }
 
         String seatMapJson = schedule.getPerformance().getVenue().getSeatMapJson();
         if (seatMapJson == null || seatMapJson.isBlank()) {
-            throw new IllegalArgumentException("공연장의 좌석 맵 JSON이 비어있습니다");
+            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP, "공연장의 좌석 맵 JSON이 비어있습니다");
         }
 
         JsonNode root;
         try {
             root = objectMapper.readTree(seatMapJson);
         } catch (IOException e) {
-            throw new IllegalArgumentException("좌석 맵 JSON 파싱 실패", e);
+            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP, "좌석 맵 JSON 파싱 실패");
         }
 
         JsonNode sections = root.path("sections");
@@ -78,11 +86,12 @@ public class ScheduleSeatInitializationService {
                 java.util.Map.Entry<String, JsonNode> e = it.next();
                 try {
                     pricing.put(e.getKey(), new java.math.BigDecimal(e.getValue().asText()));
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
         if (!sections.isArray()) {
-            throw new IllegalArgumentException("좌석 맵 JSON의 sections 형식이 올바르지 않습니다");
+            throw new BusinessException(ErrorCode.INVALID_SEAT_MAP, "좌석 맵 JSON의 sections 형식이 올바르지 않습니다");
         }
 
         int created = 0;
@@ -209,7 +218,7 @@ public class ScheduleSeatInitializationService {
         int v = 0;
         for (int i = 0; i < s.length(); i++) {
             char ch = s.charAt(i);
-            if (ch < 'A' || ch > 'Z') throw new IllegalArgumentException("Invalid row label: " + s);
+            if (ch < 'A' || ch > 'Z') throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid row label: " + s);
             v = v * 26 + (ch - 'A' + 1);
         }
         return v - 1; // zero-based

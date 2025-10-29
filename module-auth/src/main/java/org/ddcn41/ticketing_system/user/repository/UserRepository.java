@@ -14,5 +14,5 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByEmail(String email);
 
     // 회원가입 기능을 안 쓰더라도, 중복 체크가 필요하면 유지
-//    boolean existsByUsername(String username);
+    boolean existsByUsername(String username);
 }

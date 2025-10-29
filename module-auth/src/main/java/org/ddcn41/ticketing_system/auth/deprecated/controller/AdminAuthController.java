@@ -1,4 +1,4 @@
-package org.ddcn41.ticketing_system.auth.controller;
+package org.ddcn41.ticketing_system.auth.deprecated.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

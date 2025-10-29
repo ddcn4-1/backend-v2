@@ -8,13 +8,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.performance.dto.request.PerformanceRequestDto;
-import org.ddcn41.ticketing_system.performance.dto.request.PresignedUrlRequest;
-import org.ddcn41.ticketing_system.performance.dto.response.AdminPerformanceResponse;
-import org.ddcn41.ticketing_system.performance.dto.response.PerformanceResponse;
-import org.ddcn41.ticketing_system.performance.dto.response.PresignedUrlResponse;
-import org.ddcn41.ticketing_system.performance.service.PerformanceService;
-import org.ddcn41.ticketing_system.performance.service.S3Service;
+import org.ddcn41.ticketing_system.common.dto.performance.request.PerformanceRequest;
+import org.ddcn41.ticketing_system.common.dto.performance.request.PresignedUrlRequest;
+import org.ddcn41.ticketing_system.common.dto.performance.response.AdminPerformanceResponse;
+import org.ddcn41.ticketing_system.common.dto.performance.response.PerformanceResponse;
+import org.ddcn41.ticketing_system.common.dto.performance.response.PresignedUrlResponse;
+import org.ddcn41.ticketing_system.service.AdminPerformanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,16 +26,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminPerformanceController {
-    private final PerformanceService performanceService;
-    private final S3Service s3Service;
+    private final AdminPerformanceService adminPerformanceService;
+
 
     @Operation(summary = "모든 공연 조회", description = "어드민 화면에서 공연 전체 조회 시 사용")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Success get all performances", content = @Content(schema = @Schema(implementation = AdminPerformanceResponse.class),mediaType = "application/json"))
+            @ApiResponse(responseCode = "200", description = "Success get all performances", content = @Content(schema = @Schema(implementation = AdminPerformanceResponse.class), mediaType = "application/json"))
     })
     @GetMapping
-    public ResponseEntity<List<AdminPerformanceResponse>> getAllAdminPerformance(){
-        List<AdminPerformanceResponse> responses = performanceService.getAllAdminPerformances();
+    public ResponseEntity<List<AdminPerformanceResponse>> getAllAdminPerformance() {
+        List<AdminPerformanceResponse> responses = adminPerformanceService.getAllAdminPerformance();
 
         return ResponseEntity.ok(responses);
     }
@@ -54,11 +53,11 @@ public class AdminPerformanceController {
                     description = "공연 정보 (JSON 형태)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PerformanceRequestDto.class)
+                            schema = @Schema(implementation = PerformanceRequest.class)
                     )
             )
-            @RequestBody PerformanceRequestDto createPerformanceRequestDto) {
-        AdminPerformanceResponse adminPerformanceResponse = performanceService.createPerformance(createPerformanceRequestDto);
+            @RequestBody PerformanceRequest createPerformanceRequestDto) {
+        AdminPerformanceResponse adminPerformanceResponse = adminPerformanceService.createPerformance(createPerformanceRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(adminPerformanceResponse);
     }
 
@@ -87,11 +86,11 @@ public class AdminPerformanceController {
                     description = "공연 정보 (JSON 형태)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PerformanceRequestDto.class)
+                            schema = @Schema(implementation = PerformanceRequest.class)
                     )
             )
-            @RequestBody PerformanceRequestDto updatePerformanceRequestDto) {
-        AdminPerformanceResponse adminPerformanceResponse = performanceService.updatePerformance(performanceId, updatePerformanceRequestDto);
+            @RequestBody PerformanceRequest updatePerformanceRequestDto) {
+        AdminPerformanceResponse adminPerformanceResponse = adminPerformanceService.updatePerformance(performanceId, updatePerformanceRequestDto);
         return ResponseEntity.ok(adminPerformanceResponse);
     }
 
@@ -106,15 +105,14 @@ public class AdminPerformanceController {
     public ResponseEntity<PerformanceResponse> deletePerformance(
             @Parameter(description = "Performance ID", required = true)
             @PathVariable long performanceId) {
-        performanceService.deletePerformance(performanceId);
+        adminPerformanceService.deletePerformance(performanceId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/upload-url")
     public ResponseEntity<PresignedUrlResponse> getUploadPresignedUrl(@RequestBody PresignedUrlRequest presignedUrlRequest) {
-        PresignedUrlResponse response = s3Service.getUploadImagePresignedURL(presignedUrlRequest);
+        PresignedUrlResponse response = adminPerformanceService.getUploadImagePresignedURL(presignedUrlRequest);
 
         return ResponseEntity.ok(response);
     }
-
 }

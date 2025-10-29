@@ -8,19 +8,19 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AuthAuditService {
+    private static final String DETAILS = "details";
 
     private final AuditEventService auditEventService;
 
     // 로그인 성공 로그
     public void logLoginSuccess(String username) {
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
 
-        data.put("details", "Successful login");
+        data.put(DETAILS, "Successful login");
 
         AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
@@ -33,9 +33,9 @@ public class AuthAuditService {
 
     // 로그인 실패 로그
     public void logLoginFailure(String username, String errorMessage) {
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
 
-        data.put("details", "Login failed: " + errorMessage);
+        data.put(DETAILS, "Login failed: " + errorMessage);
 
         AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
@@ -48,9 +48,9 @@ public class AuthAuditService {
 
     // 로그아웃 로그
     public void logLogout(String username) {
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
 
-        data.put("details", "User logged out");
+        data.put(DETAILS, "User logged out");
 
         AuditLogDto auditLogDto = AuditLogDto.builder()
                 .principal(username)
@@ -71,7 +71,7 @@ public class AuthAuditService {
                             "LOGIN_FAILURE".equals(type) ||
                             "LOGOUT".equals(type);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // 최근 활동 조회
@@ -79,6 +79,6 @@ public class AuthAuditService {
         return getAllAuthEvents().stream()
                 .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
                 .limit(limit)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

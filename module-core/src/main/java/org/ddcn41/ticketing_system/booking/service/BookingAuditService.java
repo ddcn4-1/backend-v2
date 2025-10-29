@@ -21,7 +21,7 @@ public class BookingAuditService {
     private final AuditEventService auditEventService;
 
     public void logBookingCreated(User user, Booking booking, List<Long> seatIds) {
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
 
         data.put("bookingId", booking.getBookingId());
         data.put("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null);
@@ -39,7 +39,7 @@ public class BookingAuditService {
     }
 
     public void logBookingCancelled(String actorUsername, Booking booking, String reason) {
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
 
         data.put("bookingId", booking.getBookingId());
         data.put("scheduleId", booking.getSchedule() != null ? booking.getSchedule().getScheduleId() : null);
@@ -47,7 +47,7 @@ public class BookingAuditService {
         data.put("reason", reason);
 
         AuditLogDto auditLogDto = AuditLogDto.builder()
-                .principal(actorUsername != null ? actorUsername : resolvePrincipal(booking.getUser()))
+                .principal(actorUsername != null ? actorUsername : "userId: " + booking.getUserId())
                 .type("BOOKING_CANCELLED")
                 .data(data)
                 .build();

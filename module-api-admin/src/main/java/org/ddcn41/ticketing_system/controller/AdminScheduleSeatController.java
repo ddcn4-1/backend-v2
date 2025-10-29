@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.ddcn41.ticketing_system.seat.dto.response.InitializeSeatsResponse;
-import org.ddcn41.ticketing_system.seat.service.ScheduleSeatInitializationService;
+import org.ddcn41.ticketing_system.common.dto.seat.InitializeSeatsResponse;
+import org.ddcn41.ticketing_system.service.AdminScheduleSeatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ import java.util.List;
 @Tag(name = "Admin Schedules", description = "Admin APIs for schedule seat generation")
 public class AdminScheduleSeatController {
 
-    private final ScheduleSeatInitializationService initializationService;
+    private final AdminScheduleSeatService adminScheduleSeatService;
 
     @PostMapping("/initialize")
     @PreAuthorize("hasRole('ADMIN')")
@@ -42,7 +42,7 @@ public class AdminScheduleSeatController {
             @Parameter(description = "Dry run without persisting", required = false)
             @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun
     ) {
-        List<InitializeSeatsResponse> results = initializationService.initializeAll(dryRun);
+        List<InitializeSeatsResponse> results = adminScheduleSeatService.initializeAllSchedules(dryRun);
         return ResponseEntity.ok(
                 org.ddcn41.ticketing_system.common.dto.ApiResponse
                         .success(dryRun ? "모든 스케줄 좌석 초기화 미리보기" : "모든 스케줄 좌석 초기화 완료", results)
@@ -68,7 +68,7 @@ public class AdminScheduleSeatController {
             @Parameter(description = "Dry run without persisting", required = false)
             @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun
     ) {
-        InitializeSeatsResponse result = initializationService.initialize(scheduleId, dryRun);
+        InitializeSeatsResponse result = adminScheduleSeatService.initializeSchedule(scheduleId, dryRun);
         return ResponseEntity.ok(
                 org.ddcn41.ticketing_system.common.dto.ApiResponse
                         .success(dryRun ? "좌석 초기화 미리보기" : "좌석 초기화 완료", result)

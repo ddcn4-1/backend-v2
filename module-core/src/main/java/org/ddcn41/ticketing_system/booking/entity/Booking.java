@@ -3,7 +3,6 @@ package org.ddcn41.ticketing_system.booking.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
-import org.ddcn41.ticketing_system.user.entity.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"user", "schedule", "bookingSeats"})
+@ToString(exclude = {"schedule", "bookingSeats"})
 public class Booking {
 
     @Id
@@ -28,9 +27,8 @@ public class Booking {
     @Column(name = "booking_number", unique = true, nullable = false, length = 50)
     private String bookingNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id", nullable = false)

@@ -8,13 +8,15 @@ ext {
     springCloudVersion = '2024.0.0'
     awsSdkBom = '2.21.29'
     lombokVersion = '1.18.32'
-
+    jjwtVersion = '0.11.5'
+    springdocVersion = '2.8.0'
 }
 
 allprojects {
     group = 'org.ddcn41'
     version = '0.0.1-SNAPSHOT'
 }
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
@@ -33,6 +35,10 @@ subprojects {
         }
         dependencies {
             dependency "org.projectlombok:lombok:${lombokVersion}"
+            dependency "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+            dependency "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+            dependency "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+            dependency "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
         }
     }
 
