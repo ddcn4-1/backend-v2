@@ -49,7 +49,6 @@ public class QueueService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-
     private final Object queueLock = new Object();
 
     private static final String SESSION_KEY_PREFIX = "active_sessions:";
@@ -64,7 +63,6 @@ public class QueueService {
 
         synchronized (queueLock) {
             try {
-
                 // 기존 활성 토큰 확인
                 Optional<QueueToken> existingToken = queueTokenRepository
                         .findActiveTokenByUserIdAndPerformanceId(userId, performanceId);
@@ -89,8 +87,6 @@ public class QueueService {
                 QueueToken newToken;
 
                 if (activeTokens < maxActiveTokens) {
-                    newToken = createActiveToken(tokenString, userId, performanceId);
-
                     redisTemplate.opsForValue().increment(activeTokensKey);
                     redisTemplate.expire(activeTokensKey, Duration.ofMinutes(10));
 
@@ -713,6 +709,7 @@ public class QueueService {
                     .build();
         }
     }
+
     @Transactional(readOnly = true)
     public QueueToken getTokenByString(String token) {
         return queueTokenRepository.findByToken(token)
