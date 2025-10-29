@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.queue.domain.CustomUserDetails;
 import org.ddcn41.queue.repository.UserRepository;
 import org.ddcn41.queue.security.CognitoJwtValidator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Deprecated
+@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final CognitoJwtValidator cognitoValidator;

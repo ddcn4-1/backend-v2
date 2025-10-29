@@ -1,11 +1,14 @@
 package org.ddcn41.queue.domain;
 
 import lombok.Getter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 import java.util.Collection;
 
+@Deprecated
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 @Getter
 public class CustomUserDetails extends User {
 

@@ -87,6 +87,14 @@ public class JwtSecurityConfiguration {
                         // 공연장 조회/좌석맵 조회 API (GET만 허용)
                         .requestMatchers(HttpMethod.GET, "/v1/venues/**").permitAll()
 
+                        .requestMatchers(
+                                "/v1/queue/**",
+                                "/v1/queue/status/*",
+                                "/v1/queue/token/*/verify",
+                                "/v1/queue/token/*/use",
+                                "/v1/queue/release-session"
+                        ).permitAll()  // 임시 모두 허용
+
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 );

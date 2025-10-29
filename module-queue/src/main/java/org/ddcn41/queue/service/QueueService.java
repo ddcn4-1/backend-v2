@@ -8,6 +8,7 @@ import org.ddcn41.queue.dto.response.QueueStatusResponse;
 import org.ddcn41.queue.dto.response.TokenIssueResponse;
 import org.ddcn41.queue.entity.QueueToken;
 import org.ddcn41.queue.repository.QueueTokenRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -24,24 +25,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class QueueService {
     private static final String TOKEN_ERROR_MSG = "토큰을 찾을 수 없습니다";
 
     private final QueueTokenRepository queueTokenRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final  RedisTemplate<String, String> redisTemplate;
+    private final int maxActiveTokens;
+    private final int maxInactiveSeconds;
+    private final int waitTimePerPerson;
+
+    public QueueService(QueueTokenRepository queueTokenRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate,
+                        @Value("${queue.max-active-tokens:3}") int maxActiveTokens,
+                        @Value("${queue.max-inactive-seconds:120}") int maxInactiveSeconds,
+                        @Value("${queue.wait-time-per-person:10}") int waitTimePerPerson) {
+        this.queueTokenRepository = queueTokenRepository;
+        this.redisTemplate = redisTemplate;
+        this.maxActiveTokens = maxActiveTokens;
+        this.maxInactiveSeconds = maxInactiveSeconds;
+        this.waitTimePerPerson = waitTimePerPerson;
+    }
+
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${queue.max-active-tokens:3}")
-    private int maxActiveTokens;
-
-    @Value("${queue.max-inactive-seconds:120}")
-    private int maxInactiveSeconds;
-
-    @Value("${queue.wait-time-per-person:10}")
-    private int waitTimePerPerson;
 
     private final Object queueLock = new Object();
 
