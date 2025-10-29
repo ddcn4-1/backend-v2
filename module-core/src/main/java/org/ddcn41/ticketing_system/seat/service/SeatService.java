@@ -14,6 +14,7 @@ import org.ddcn41.ticketing_system.seat.repository.SeatLockRepository;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,19 +33,29 @@ import java.util.stream.Collectors;
  * - 좌석 상태 조회
  */
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class SeatService {
     private final ObjectProvider<SeatService> seatServiceProvider;
-
     private final ScheduleSeatRepository scheduleSeatRepository;
     private final SeatLockRepository seatLockRepository;
     private final PerformanceScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
+
+
+
     private static final int LOCK_DURATION_MINUTES = 1;
     private static final String REDIS_LOCK_PREFIX = "seat_lock:";
+
+    public SeatService(ObjectProvider<SeatService> seatServiceProvider, ScheduleSeatRepository scheduleSeatRepository, SeatLockRepository seatLockRepository, PerformanceScheduleRepository scheduleRepository, UserRepository userRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate) {
+        this.seatServiceProvider = seatServiceProvider;
+        this.scheduleSeatRepository = scheduleSeatRepository;
+        this.seatLockRepository = seatLockRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.userRepository = userRepository;
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * 스케줄의 모든 좌석 상태 조회

@@ -5,14 +5,18 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.ticketing_system.common.authorization.interfaces.TokenBlacklistChecker;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+
+@Deprecated
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
 public class TokenBlacklistService implements TokenBlacklistChecker {
 
     @Autowired

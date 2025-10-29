@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
+@Deprecated
 @Component
 public class JwtUtil implements JwtTokenValidator {
 
