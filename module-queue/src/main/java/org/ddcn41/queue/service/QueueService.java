@@ -769,13 +769,13 @@ public class QueueService {
             Set<String> heartbeatKeys = redisTemplate.keys(HEARTBEAT_KEY_PREFIX + "*");
             Set<String> activeTokenKeys = redisTemplate.keys(ACTIVE_TOKENS_KEY_PREFIX + "*");
 
-            if (sessionKeys != null && !sessionKeys.isEmpty()) {
+            if (!sessionKeys.isEmpty()) {
                 redisTemplate.delete(sessionKeys);
             }
-            if (heartbeatKeys != null && !heartbeatKeys.isEmpty()) {
+            if (!heartbeatKeys.isEmpty()) {
                 redisTemplate.delete(heartbeatKeys);
             }
-            if (activeTokenKeys != null && !activeTokenKeys.isEmpty()) {
+            if (!activeTokenKeys.isEmpty()) {
                 redisTemplate.delete(activeTokenKeys);
             }
             log.info("모든 세션 초기화 완료");
