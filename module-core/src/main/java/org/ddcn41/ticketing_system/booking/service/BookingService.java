@@ -21,6 +21,7 @@ import org.ddcn41.ticketing_system.common.dto.booking.GetBookings200ResponseDto;
 import org.ddcn41.ticketing_system.common.dto.queue.TokenVerifyRequest;
 import org.ddcn41.ticketing_system.common.exception.BusinessException;
 import org.ddcn41.ticketing_system.common.exception.ErrorCode;
+import org.ddcn41.ticketing_system.performance.entity.Performance;
 import org.ddcn41.ticketing_system.performance.entity.PerformanceSchedule;
 import org.ddcn41.ticketing_system.performance.repository.PerformanceScheduleRepository;
 import org.ddcn41.ticketing_system.seat.entity.ScheduleSeat;
@@ -28,6 +29,7 @@ import org.ddcn41.ticketing_system.seat.repository.ScheduleSeatRepository;
 import org.ddcn41.ticketing_system.seat.service.SeatService;
 import org.ddcn41.ticketing_system.user.entity.User;
 import org.ddcn41.ticketing_system.user.repository.UserRepository;
+import org.ddcn41.ticketing_system.venue.entity.Venue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -36,12 +38,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -495,49 +496,81 @@ public class BookingService {
                 .build();
     }
 
-    //todo: Refactor this method to reduce its Cognitive Complexity
-    private GetBookingDetail200ResponseDto toDetailDto(Booking b) {
-        User user = userRepository.findById(b.getUserId())
+    private GetBookingDetail200ResponseDto toDetailDto(Booking booking) {
+        User user = userRepository.findById(booking.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // Get first seat info for display
-        String seatCode = null;
-        String seatZone = null;
-        if (b.getBookingSeats() != null && !b.getBookingSeats().isEmpty()) {
-            var scheduleSeat = b.getBookingSeats().getFirst().getSeat();
-            if (scheduleSeat != null) {
-                String rowLabel = scheduleSeat.getRowLabel();
-                String colNum = scheduleSeat.getColNum();
-                if (rowLabel != null && colNum != null) {
-                    seatCode = rowLabel + colNum;
-                }
-                seatZone = scheduleSeat.getZone();
-            }
-        }
+        PerformanceSchedule schedule = booking.getSchedule();
+        Performance performance = schedule != null ? schedule.getPerformance() : null;
+        Venue venue = performance != null ? performance.getVenue() : null;
+
+        SeatInfo seatInfo = extractSeatInfo(booking);
+        List<BookingSeatDto> seatDtos = toSeatDtoList(booking);
 
         return GetBookingDetail200ResponseDto.builder()
-                .bookingId(b.getBookingId())
-                .bookingNumber(b.getBookingNumber())
-                .userId(user != null ? user.getUserId() : null)
-                .userName(user != null ? user.getName() : null)
-                .userPhone(user != null ? user.getPhone() : null)
-                .scheduleId(b.getSchedule() != null ? b.getSchedule().getScheduleId() : null)
-                .performanceTitle(b.getSchedule() != null && b.getSchedule().getPerformance() != null ? b.getSchedule().getPerformance().getTitle() : null)
-                .venueName(b.getSchedule() != null && b.getSchedule().getPerformance() != null && b.getSchedule().getPerformance().getVenue() != null ? b.getSchedule().getPerformance().getVenue().getVenueName() : null)
-                .showDate(b.getSchedule() != null ? odt(b.getSchedule().getShowDatetime()) : null)
-                .seatCode(seatCode)
-                .seatZone(seatZone)
-                .seatCount(b.getSeatCount())
-                .totalAmount(b.getTotalAmount() == null ? 0.0 : b.getTotalAmount().doubleValue())
-                .status(b.getStatus() == null ? null : GetBookingDetail200ResponseDto.StatusEnum.valueOf(b.getStatus().name()))
-                .expiresAt(odt(b.getExpiresAt()))
-                .bookedAt(odt(b.getBookedAt()))
-                .cancelledAt(odt(b.getCancelledAt()))
-                .cancellationReason(b.getCancellationReason())
-                .createdAt(odt(b.getCreatedAt()))
-                .updatedAt(odt(b.getUpdatedAt()))
-                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).toList())
+                .bookingId(booking.getBookingId())
+                .bookingNumber(booking.getBookingNumber())
+                .userId(user.getUserId())
+                .userName(user.getName())
+                .userPhone(user.getPhone())
+                .scheduleId(idOrNull(schedule))
+                .performanceTitle(textOrNull(performance, Performance::getTitle))
+                .venueName(textOrNull(venue, Venue::getVenueName))
+                .showDate(odtOrNull(schedule, PerformanceSchedule::getShowDatetime))
+                .seatCode(seatInfo.code())
+                .seatZone(seatInfo.zone())
+                .seatCount(booking.getSeatCount())
+                .totalAmount(booking.getTotalAmount() != null ? booking.getTotalAmount().doubleValue() : 0.0)
+                .status(statusOrNull(booking.getStatus()))
+                .expiresAt(odt(booking.getExpiresAt()))
+                .bookedAt(odt(booking.getBookedAt()))
+                .cancelledAt(odt(booking.getCancelledAt()))
+                .cancellationReason(booking.getCancellationReason())
+                .createdAt(odt(booking.getCreatedAt()))
+                .updatedAt(odt(booking.getUpdatedAt()))
+                .seats(seatDtos)
                 .build();
+    }
+    private record SeatInfo(String code, String zone) {}
+
+    private SeatInfo extractSeatInfo(Booking booking) {
+        if (booking.getBookingSeats() == null || booking.getBookingSeats().isEmpty()) {
+            return new SeatInfo(null, null);
+        }
+
+        var seat = booking.getBookingSeats().getFirst().getSeat();
+        if (seat == null) return new SeatInfo(null, null);
+
+        String code = (seat.getRowLabel() != null && seat.getColNum() != null)
+                ? seat.getRowLabel() + seat.getColNum()
+                : null;
+        return new SeatInfo(code, seat.getZone());
+    }
+
+    private List<BookingSeatDto> toSeatDtoList(Booking booking) {
+        if (booking.getBookingSeats() == null) return List.of();
+        return booking.getBookingSeats().stream()
+                .map(this::toSeatDto)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private Long idOrNull(PerformanceSchedule schedule) {
+        return schedule != null ? schedule.getScheduleId() : null;
+    }
+
+    private <T> String textOrNull(T obj, Function<T, String> getter) {
+        return obj != null ? getter.apply(obj) : null;
+    }
+
+    private <T> OffsetDateTime odtOrNull(T obj, Function<T, LocalDateTime> getter) {
+        return obj != null ? odt(getter.apply(obj)) : null;
+    }
+
+    private GetBookingDetail200ResponseDto.StatusEnum statusOrNull(BookingStatus status) {
+        return status != null
+                ? GetBookingDetail200ResponseDto.StatusEnum.valueOf(status.name())
+                : null;
     }
 
     private OffsetDateTime odt(java.time.LocalDateTime ldt) {
