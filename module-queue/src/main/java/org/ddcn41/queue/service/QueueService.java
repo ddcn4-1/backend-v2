@@ -35,7 +35,7 @@ public class QueueService {
     private final int maxInactiveSeconds;
     private final int waitTimePerPerson;
 
-    public QueueService(QueueTokenRepository queueTokenRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate, QueueTransactionlService queueTransactionlService,
+    public QueueService(QueueTokenRepository queueTokenRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate,
                         @Value("${queue.max-active-tokens:3}") int maxActiveTokens,
                         @Value("${queue.max-inactive-seconds:120}") int maxInactiveSeconds,
                         @Value("${queue.wait-time-per-person:10}") int waitTimePerPerson) {
