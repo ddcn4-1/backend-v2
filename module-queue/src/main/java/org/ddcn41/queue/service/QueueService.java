@@ -488,7 +488,7 @@ public class QueueService {
                     .findWaitingTokensByPerformanceIdOrderByIssuedAt(performanceId)
                     .stream()
                     .limit(slotsAvailable)
-                    .collect(Collectors.toList());
+                    .toList();
 
             for (QueueToken token : waitingTokens) {
                 redisTemplate.opsForValue().increment(activeTokensKey);
