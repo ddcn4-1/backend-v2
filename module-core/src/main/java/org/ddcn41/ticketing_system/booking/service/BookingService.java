@@ -41,7 +41,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +58,7 @@ public class BookingService {
     private final QueueClient queueClient;
     private final UserRepository userRepository;
 
+
     @Transactional(rollbackFor = Exception.class)
     public CreateBookingResponseDto createBooking(String userId, CreateBookingRequestDto req) {
         User user = userRepository.findById(userId)
@@ -69,7 +69,6 @@ public class BookingService {
 
         // 대기열 토큰 검증 추가 (기존 seat_map_json 로직 이전에)
         validateQueueTokenIfRequired(req, user, schedule);
-
 
         // seat_map_json 파싱 (검증/가격)
         ObjectMapper om = new ObjectMapper();
@@ -132,10 +131,8 @@ public class BookingService {
             throw new BusinessException(ErrorCode.SEAT_ALREADY_BOOKED);
         }
 
-        // 이미 검증된 requestedSeats 사용 (중복 조회 방지)
-        List<ScheduleSeat> seats = requestedSeats;
 
-        BigDecimal total = seats.stream()
+        BigDecimal total = requestedSeats.stream()
                 .map(ScheduleSeat::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -145,7 +142,7 @@ public class BookingService {
                 .bookingNumber(bookingNumber)
                 .userId(user.getUserId())
                 .schedule(schedule)
-                .seatCount(seats.size())
+                .seatCount(requestedSeats.size())
                 .totalAmount(total)
                 .status(BookingStatus.CONFIRMED)
                 .build();
@@ -165,7 +162,7 @@ public class BookingService {
 
 
         // 예약 좌석 정보 생성 (좌석 상태 변경은 하지 않음)
-        List<BookingSeat> savedSeats = seats.stream()
+        List<BookingSeat> savedSeats = requestedSeats.stream()
                 .map(seat -> BookingSeat.builder()
                         .booking(saved)
                         .seat(seat)
@@ -177,10 +174,10 @@ public class BookingService {
         saved.setBookingSeats(savedSeats);
 
         // 좌석을 최종 예약 상태로 전환 (이미 LOCKED 상태까지 검증 및 카운터 반영 완료)
-        seats.forEach(seat -> seat.setStatus(ScheduleSeat.SeatStatus.BOOKED));
-        scheduleSeatRepository.saveAll(seats);
+        requestedSeats.forEach(seat -> seat.setStatus(ScheduleSeat.SeatStatus.BOOKED));
+        scheduleSeatRepository.saveAll(requestedSeats);
 
-        List<Long> seatIds = seats.stream().map(ScheduleSeat::getSeatId).toList();
+        List<Long> seatIds = requestedSeats.stream().map(ScheduleSeat::getSeatId).toList();
         bookingAuditService.logBookingCreated(user, saved, seatIds);
 
         return toCreateResponse(saved);
@@ -203,10 +200,10 @@ public class BookingService {
                         .performanceId(schedule.getPerformance().getPerformanceId())
                         .build();
 
-                // 임시 테스트를 위해 검증 진행 X
+                 //임시 테스트를 위해 검증 진행 X
 //                ApiResponse<TokenVerifyResponse> response =
 //                        queueClient.verifyToken(req.getQueueToken(), verifyRequest);
-
+//
 //                if (response.getData() == null || !response.getData().isValid()) {
 //                    throw new BusinessException(ErrorCode.QUEUE_TOKEN_INVALID,
 //                            response.getData() != null ? response.getData().getReason() : "");
@@ -486,7 +483,7 @@ public class BookingService {
                 .showDate(b.getSchedule() != null ? odt(b.getSchedule().getShowDatetime()) : null)
                 .seatCount(b.getSeatCount())
                 .totalAmount(b.getTotalAmount() == null ? 0.0 : b.getTotalAmount().doubleValue())
-                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).collect(Collectors.toList()))
+                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).toList())
                 .status(b.getStatus() == null ? null : BookingDto.StatusEnum.valueOf(b.getStatus().name()))
                 .expiresAt(odt(b.getExpiresAt()))
                 .bookedAt(odt(b.getBookedAt()))
@@ -497,6 +494,7 @@ public class BookingService {
                 .build();
     }
 
+    //todo: Refactor this method to reduce its Cognitive Complexity
     private GetBookingDetail200ResponseDto toDetailDto(Booking b) {
         User user = userRepository.findById(b.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -505,7 +503,7 @@ public class BookingService {
         String seatCode = null;
         String seatZone = null;
         if (b.getBookingSeats() != null && !b.getBookingSeats().isEmpty()) {
-            var scheduleSeat = b.getBookingSeats().get(0).getSeat();
+            var scheduleSeat = b.getBookingSeats().getFirst().getSeat();
             if (scheduleSeat != null) {
                 String rowLabel = scheduleSeat.getRowLabel();
                 String colNum = scheduleSeat.getColNum();
@@ -537,7 +535,7 @@ public class BookingService {
                 .cancellationReason(b.getCancellationReason())
                 .createdAt(odt(b.getCreatedAt()))
                 .updatedAt(odt(b.getUpdatedAt()))
-                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).collect(Collectors.toList()))
+                .seats(b.getBookingSeats() == null ? List.of() : b.getBookingSeats().stream().map(this::toSeatDto).toList())
                 .build();
     }
 
@@ -549,6 +547,7 @@ public class BookingService {
         return value == null ? null : value.trim().toUpperCase();
     }
 
+    //todo: Refactor this method to reduce its Cognitive Complexity
     private static boolean validateBySeatMap(JsonNode sections, String grade, String zone, String rowLabel, String colNum) {
         if (!sections.isArray() || rowLabel == null || colNum == null) {
             return false;
@@ -616,9 +615,8 @@ public class BookingService {
         }
 
         String normalizedGrade = grade.trim().toUpperCase();
-        java.util.Iterator<java.util.Map.Entry<String, JsonNode>> fields = pricingNode.fields();
-        while (fields.hasNext()) {
-            java.util.Map.Entry<String, JsonNode> entry = fields.next();
+
+        for (var entry : pricingNode.properties()) {
             if (normalizedGrade.equals(entry.getKey().trim().toUpperCase())) {
                 try {
                     return new BigDecimal(entry.getValue().asText());
@@ -627,6 +625,7 @@ public class BookingService {
                 }
             }
         }
+
         return null;
     }
 
