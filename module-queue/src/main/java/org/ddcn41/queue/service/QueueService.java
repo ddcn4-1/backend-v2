@@ -1,6 +1,5 @@
 package org.ddcn41.queue.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ddcn41.queue.dto.response.QueueCheckResponse;
 import org.ddcn41.queue.dto.response.QueueStatsResponse;
@@ -36,7 +35,7 @@ public class QueueService {
     private final int maxInactiveSeconds;
     private final int waitTimePerPerson;
 
-    public QueueService(QueueTokenRepository queueTokenRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate,
+    public QueueService(QueueTokenRepository queueTokenRepository, @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate, QueueTransactionlService queueTransactionlService,
                         @Value("${queue.max-active-tokens:3}") int maxActiveTokens,
                         @Value("${queue.max-inactive-seconds:120}") int maxInactiveSeconds,
                         @Value("${queue.wait-time-per-person:10}") int waitTimePerPerson) {
@@ -245,7 +244,7 @@ public class QueueService {
             updateQueuePosition(queueToken);
         }
 
-        Integer position = queueToken.getPositionInQueue() != null ? queueToken.getPositionInQueue() : 1;
+        int position = queueToken.getPositionInQueue() != null ? queueToken.getPositionInQueue() : 1;
         Integer waitTime = queueToken.getEstimatedWaitTimeMinutes() != null ?
                 queueToken.getEstimatedWaitTimeMinutes() : position * waitTimePerPerson / 60;
 
@@ -347,7 +346,6 @@ public class QueueService {
                         "현재 입장 가능한 인원이 가득 찼습니다");
             }
 
-            Long newCount = redisTemplate.opsForValue().increment(activeTokensKey);
             redisTemplate.expire(activeTokensKey, Duration.ofMinutes(10));
 
             try {
@@ -662,11 +660,20 @@ public class QueueService {
     }
 
     private QueueStatusResponse buildQueueStatusResponse(QueueToken token) {
-        Integer position = token.getPositionInQueue() != null ? token.getPositionInQueue() :
-                (token.getStatus() == QueueToken.TokenStatus.WAITING ? 1 : 0);
-        Integer waitTime = token.getEstimatedWaitTimeMinutes() != null ?
-                token.getEstimatedWaitTimeMinutes() :
-                (token.getStatus() == QueueToken.TokenStatus.WAITING ? Math.max(1, waitTimePerPerson / 60) : 0);
+        Integer position;
+        if (token.getPositionInQueue() != null) {
+            position = token.getPositionInQueue();
+        } else {
+            if (token.getStatus() == QueueToken.TokenStatus.WAITING) position = 1;
+            else position = 0;
+        }
+        Integer waitTime;
+        if (token.getEstimatedWaitTimeMinutes() != null) {
+            waitTime = token.getEstimatedWaitTimeMinutes();
+        } else {
+            if (token.getStatus() == QueueToken.TokenStatus.WAITING) waitTime = Math.max(1, waitTimePerPerson / 60);
+            else waitTime = 0;
+        }
 
         return QueueStatusResponse.builder()
                 .token(token.getToken())
@@ -680,7 +687,7 @@ public class QueueService {
                 .build();
     }
 
-    private QueueCheckResponse buildQueueCheckResponse(QueueToken token, Long performanceId, Long scheduleId) {
+    private QueueCheckResponse buildQueueCheckResponse(QueueToken token, Long performanceId, Long ScheduleId) {
         if (token.getStatus() == QueueToken.TokenStatus.ACTIVE) {
             String activeTokensKey = ACTIVE_TOKENS_KEY_PREFIX + performanceId;
             String activeTokensStr = redisTemplate.opsForValue().get(activeTokensKey);
