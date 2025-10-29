@@ -1,6 +1,7 @@
 package org.ddcn41.starter.authorization.model;
 
 import io.jsonwebtoken.Claims;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,10 +11,14 @@ import java.util.stream.Collectors;
 
 public class BasicCognitoUser implements UserDetails {
     private final String username;
+    // 추가 getter 메서드들
+    @Getter
     private final String email;
+    @Getter
     private final String userId;
     private final List<String> groups;
     private final Map<String, Object> attributes;
+    @Getter
     private final String token;
     private final Claims claims;
 
@@ -93,25 +98,12 @@ public class BasicCognitoUser implements UserDetails {
         return true;
     }
 
-    // 추가 getter 메서드들
-    public String getEmail() {
-        return email;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
     public List<String> getGroups() {
         return new ArrayList<>(groups);
     }
 
     public Map<String, Object> getAttributes() {
         return new HashMap<>(attributes);
-    }
-
-    public String getToken() {
-        return token;
     }
 
     public Claims getClaims() {
