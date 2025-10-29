@@ -46,21 +46,6 @@ bootJar {
     enabled = false
 }
 
-// 로컬 Maven 배포를 위한 설정
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-
-            pom {
-                name = 'Authorization Spring Boot Starter'
-                description = 'Spring Boot starter for JWT authentication with AWS Cognito'
-            }
-        }
-    }
-}
-
-
 test {
     useJUnitPlatform()
 }
