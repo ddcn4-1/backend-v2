@@ -105,3 +105,51 @@ VITE_POST_LOGOUT_REDIRECT_URI=https://local.accounts.ddcn41.com
 
 2. `pnpm dev` 으로 프론트 실행
 3. https://local.ddcn41.com 으로 접속 > 크롬으로 처음 접속 시 advanced 에서 접근 허용 필요
+
+
+## authorization-starter-spring 인가 서비스 사용방법
+- 아래 2가지 설정으로인가 필요한 MSA 서비스에 자동으로 인가 서비스 붙음
+- security config 변경 필요시 authorization-spring-boot-starter/src/main/java/org/ddcn41/starter/authorization/config/JwtSecurityConfiguration.java 에서 중앙 관리
+
+### 1. build.gradle
+인가 필요한 MSA 서비스의 build.gradle에 implementation project(':authorization-spring-boot-starter') 추가
+
+### 2. application.yml 에 아래 설정 추가
+```
+jwt:
+  enabled: true
+  cookie-name: id_token
+  jwks-cache-duration: 300000  # 5분
+
+  cognito:
+    region: ap-northeast-2
+    user-pool-id: ${COGNITO_USER_POOL_ID: 실제 값}
+    client-id: ${COGNITO_CLIENT_ID:실제 값}
+    validate-issuer: true
+    validate-audience: true
+    validate-token-use: true
+
+  blacklist:
+    enabled: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:}
+      key-prefix: "jwt:blacklist:"
+      connection-timeout: 2000
+      command-timeout: 1000
+
+
+// migration 중 기존에 사용하는 security, auth 관련 클래스가 있다면 
+// @Deprecated(forRemoval = true)
+// @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
+//으로 아래 설정으로 사용하지 않음을 제어
+
+use:
+  legacy:
+    auth : false
+```
+<img width="1820" height="1154" alt="carbon (1)" src="https://github.com/user-attachments/assets/226c6d5a-f21e-4138-ad6b-93397a6dc851" />
+
+
