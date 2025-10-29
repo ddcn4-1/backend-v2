@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @Component
@@ -43,9 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+        String requestURI = request.getRequestURI();
+        System.out.println("=== JWT Filter START: " + requestURI + " ===");
+        logger.info("=== JWT Filter processing: {} ===", requestURI);
+
+
         try {
             // JWT 토큰 추출
             String jwt = extractJwtFromRequest(request);
+            logger.info("JWT Token extracted: {}", jwt != null ? "Present" : "Not found");
 
             if (jwt != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -68,7 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
+                logger.info("Authentication set successfully for user: {}", userDetails.getUsername());
                 // SecurityContext에 인증 정보 설정
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 

@@ -17,6 +17,18 @@ public class BasicCognitoUser implements UserDetails {
     private final String token;
     private final Claims claims;
 
+    // 기본 생성자 추가 (Spring이 요구함)
+    public BasicCognitoUser() {
+        this.username = null;
+        this.email = null;
+        this.userId = null;
+        this.groups = List.of();
+        this.attributes = Map.of();
+        this.token = null;
+        this.claims = null;
+    }
+
+    // 주 생성자 (JWT Claims 사용)
     public BasicCognitoUser(Claims claims, String token) {
         this.claims = claims;
         this.token = token;
@@ -27,7 +39,8 @@ public class BasicCognitoUser implements UserDetails {
         this.attributes = new HashMap<>(claims);
     }
 
-    // 생성자 오버로드 (기존 호환성 유지)
+    // 기존 호환성을 위한 생성자 (deprecated)
+    @Deprecated
     public BasicCognitoUser(String username, String email, String userId,
                             List<String> groups, Map<String, Object> attributes, String token) {
         this.username = username;

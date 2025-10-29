@@ -12,8 +12,6 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
 
-    implementation 'org.ddcn41:authorization-spring-boot-starter:1.0.0'
-
 
     // OpenFeign
     api 'org.springframework.cloud:spring-cloud-starter-openfeign'

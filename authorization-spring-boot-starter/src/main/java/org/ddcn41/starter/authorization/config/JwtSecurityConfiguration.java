@@ -5,6 +5,8 @@ import org.ddcn41.starter.authorization.filter.JwtAuthenticationFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @ConditionalOnProperty(prefix = "jwt", name = "enabled", havingValue = "true", matchIfMissing = true)
+@Order(1)
 public class JwtSecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -28,6 +31,7 @@ public class JwtSecurityConfiguration {
     @Bean
     public SecurityFilterChain jwtFilterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher("/**")
                 // CSRF 비활성화 (JWT 사용시)
                 .csrf(AbstractHttpConfigurer::disable)
 
@@ -46,24 +50,49 @@ public class JwtSecurityConfiguration {
 
                 // 기본 권한 설정
                 .authorizeHttpRequests(authz -> authz
-                        // Health check endpoints
-                        .requestMatchers("/actuator/**", "/health/**").permitAll()
+                        // 인증 관련 엔드포인트 허용
+                        .requestMatchers("/v1/auth/**").permitAll()
+                        .requestMatchers("/v1/admin/auth/login").permitAll()  // 관리자 로그인 허용
+                        .requestMatchers("/v1/admin/auth/logout").permitAll()  // 관리자 로그아웃 허용
 
-                        // Static resources
-                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        // 헬스체크 허용
+                        .requestMatchers("/actuator/**").permitAll()
 
-                        // API 문서
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Swagger / OpenAPI 문서 허용
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
 
-                        // Public endpoints (각 서비스에서 오버라이드 가능)
-                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/v1/admin/users/**").hasAnyRole("ADMIN", "DEVOPS")
+                        .requestMatchers("/v1/admin/performances/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/v1/admin/schedules/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/admin/bookings/**").hasRole("ADMIN")
+
+                        // internal API 허용
+                        .requestMatchers("/v1/internal/**").permitAll()
+
+                        // 공연조회 API 허용
+                        .requestMatchers("/v1/performances/**").permitAll()
+
+                        // 예매 관련 API - 인증 필요
+                        .requestMatchers("/v1/bookings/**").authenticated()
+
+                        // 좌석 조회 API 허용 (스케줄별 좌석 가용성 조회)
+                        .requestMatchers("/v1/schedules/**").permitAll()
+
+                        // 공연장 조회/좌석맵 조회 API (GET만 허용)
+                        .requestMatchers(HttpMethod.GET, "/v1/venues/**").permitAll()
 
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
-                )
+                );
 
                 // 예외 처리
-                .exceptionHandling(ex -> ex
+                http.exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
                         .accessDeniedHandler(new JwtAccessDeniedHandler())
                 );

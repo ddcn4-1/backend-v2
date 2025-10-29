@@ -1,7 +1,0 @@
-# src/main/resources/META-INF/spring.factories
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.ddcn41.starter.authorization.config.JwtAuthAutoConfiguration
-
-# Configuration Properties ?? (Spring Boot 2.7+ ??)
-org.springframework.boot.autoconfigure.ConfigurationPropertiesAutoConfiguration=\
-org.ddcn41.starter.authorization.properties.JwtProperties

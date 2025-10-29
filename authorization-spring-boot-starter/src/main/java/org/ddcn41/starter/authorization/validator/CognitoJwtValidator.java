@@ -1,5 +1,6 @@
 package org.ddcn41.starter.authorization.validator;
 
+
 import io.jsonwebtoken.*;
 import org.ddcn41.starter.authorization.model.BasicCognitoUser;
 import org.ddcn41.starter.authorization.properties.JwtProperties;
@@ -57,7 +58,7 @@ public class CognitoJwtValidator {
         } catch (MalformedJwtException e) {
             logger.warn("Malformed JWT token: {}", e.getMessage());
             throw e;
-        } catch (security.SignatureException | io.jsonwebtoken.security.SignatureException e) {
+        } catch (SignatureException e) {
             logger.warn("Invalid JWT signature: {}", e.getMessage());
             throw new JwtException("Invalid JWT signature", e);
         } catch (IllegalArgumentException e) {

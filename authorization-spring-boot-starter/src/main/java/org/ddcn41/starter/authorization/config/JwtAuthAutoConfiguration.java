@@ -11,17 +11,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 
 @AutoConfiguration
-@ConditionalOnClass({Jwts.class, WebSecurityConfiguration.class})
+@ConditionalOnClass({Jwts.class})
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnProperty(prefix = "jwt", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JwtProperties.class)
 @Import({
         JwtValidatorConfiguration.class,
-        JwtFilterConfiguration.class,
         JwtBlacklistConfiguration.class,
+        JwtFilterConfiguration.class,
         JwtSecurityConfiguration.class
 })
 public class JwtAuthAutoConfiguration {
