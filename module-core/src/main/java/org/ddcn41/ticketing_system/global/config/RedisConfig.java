@@ -9,8 +9,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-@Deprecated
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@Deprecated(forRemoval = true)
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 @Configuration
 public class RedisConfig {
 

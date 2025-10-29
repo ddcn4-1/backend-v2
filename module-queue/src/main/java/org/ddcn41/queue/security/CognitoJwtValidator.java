@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-@Deprecated
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class CognitoJwtValidator {
 

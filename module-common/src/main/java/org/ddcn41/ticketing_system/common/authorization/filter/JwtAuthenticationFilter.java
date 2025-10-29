@@ -28,10 +28,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenValidator jwtTokenValidator;

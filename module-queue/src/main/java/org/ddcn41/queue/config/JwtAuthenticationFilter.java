@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Deprecated
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@Deprecated(forRemoval = true)
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final CognitoJwtValidator cognitoValidator;

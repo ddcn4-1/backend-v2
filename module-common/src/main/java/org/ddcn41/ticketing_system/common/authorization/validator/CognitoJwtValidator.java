@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 //@ConditionalOnProperty(name = "auth.cognito.enabled", havingValue = "true")
 public class CognitoJwtValidator {
 

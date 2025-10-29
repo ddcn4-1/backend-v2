@@ -7,7 +7,7 @@ import org.springframework.security.core.userdetails.User;
 
 import java.util.Collection;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 @Getter
 public class CustomUserDetails extends User {

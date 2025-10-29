@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "auth.cognito")
-@Deprecated
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class CognitoProperties {
     private boolean enabled = true;

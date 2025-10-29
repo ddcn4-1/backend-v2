@@ -14,9 +14,9 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Component
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class JwtUtil implements JwtTokenValidator {
 
     @Value("${jwt.secret}")

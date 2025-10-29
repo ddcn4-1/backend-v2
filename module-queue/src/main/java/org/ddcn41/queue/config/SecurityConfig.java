@@ -12,7 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @RequiredArgsConstructor
-@Deprecated
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class SecurityConfig {
 

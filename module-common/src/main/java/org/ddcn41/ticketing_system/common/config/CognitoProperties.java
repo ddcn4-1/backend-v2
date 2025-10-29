@@ -4,10 +4,10 @@ import lombok.Data;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Data
 @ConfigurationProperties(prefix = "auth.cognito")
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class CognitoProperties {
     private boolean enabled = true;  // false : 기존 JWT 방식 유지
     private String userPoolId;

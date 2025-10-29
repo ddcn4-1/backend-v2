@@ -21,12 +21,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties(CognitoProperties.class)
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class SecurityConfig {
 
     private final CustomUserDetailsProvider userDetailsProvider;

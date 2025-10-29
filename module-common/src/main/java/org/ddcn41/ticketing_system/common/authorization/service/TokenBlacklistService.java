@@ -13,10 +13,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "use.legacy.jwt", havingValue = "true")
+@ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 public class TokenBlacklistService implements TokenBlacklistChecker {
 
     @Autowired

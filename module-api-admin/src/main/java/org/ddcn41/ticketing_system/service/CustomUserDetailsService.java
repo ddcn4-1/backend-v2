@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Deprecated
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "use.legacy.auth", havingValue = "true")
 @Service
 public class CustomUserDetailsService implements CustomUserDetailsProvider, UserDetailsService {
