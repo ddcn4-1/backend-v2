@@ -7,7 +7,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class BasicCognitoUser implements UserDetails {
     private final String username;
@@ -17,12 +16,12 @@ public class BasicCognitoUser implements UserDetails {
     @Getter
     private final String userId;
     private final List<String> groups;
-    private final Map<String, Object> attributes;
+    private final transient Map<String, Object> attributes;
     @Getter
     private final String token;
-    private final Claims claims;
+    private final transient Claims claims;
 
-    // 기본 생성자 추가 (Spring이 요구함)
+    // 기본 생성자 추가
     public BasicCognitoUser() {
         this.username = null;
         this.email = null;
@@ -48,7 +47,7 @@ public class BasicCognitoUser implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return groups.stream()
                 .map(group -> new SimpleGrantedAuthority("ROLE_" + group.toUpperCase()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -103,13 +102,13 @@ public class BasicCognitoUser implements UserDetails {
     public Boolean isEmailVerified() {
         if (claims != null) {
             Object emailVerified = claims.get("email_verified");
-            if (emailVerified instanceof Boolean) {
-                return (Boolean) emailVerified;
-            } else if (emailVerified instanceof String) {
-                return "true".equalsIgnoreCase((String) emailVerified);
+            if (emailVerified instanceof Boolean emailboolen) {
+                return emailboolen;
+            } else if (emailVerified instanceof String emailboolen) {
+                return "true".equalsIgnoreCase(emailboolen);
             }
         }
-        return null;
+        return false;
     }
 
     // 헬퍼 메서드들
@@ -129,7 +128,7 @@ public class BasicCognitoUser implements UserDetails {
                 return ((List<?>) groupsObj).stream()
                         .filter(Objects::nonNull)
                         .map(Object::toString)
-                        .collect(Collectors.toList());
+                        .toList();
             } catch (Exception e) {
                 // 타입 캐스팅 실패시 빈 리스트 반환
                 return List.of();
