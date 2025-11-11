@@ -2,6 +2,7 @@
 plugins {
     id 'org.springframework.boot'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco' // 코드 커버리지
 }
 
 ext {
@@ -21,29 +22,146 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+
     // Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
 
+    // ===== 테스트 의존성 추가 =====
 
-    runtimeOnly 'org.postgresql:postgresql'
-
+    //  기본 Spring Boot 테스트 (JUnit 5, Mockito, AssertJ 포함)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    //  Spring Security 테스트
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // ️ 테스트용 데이터베이스 (H2)
+    testRuntimeOnly 'com.h2database:h2'
+
+    //  TestContainers (실제 DB/Redis 테스트용)
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'org.testcontainers:postgresql:1.19.3'
+
+    //  Embedded Redis (단위테스트용)
+    testImplementation 'it.ozimov:embedded-redis:0.7.3'
+
+    // Mockito 추가 유틸리티
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+    // AssertJ 추가 (더 나은 assertions)
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+
+    // 시간 테스트용
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+
+    // 테스트용 Lombok
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+// 중복 파일 처리 전략 설정
+tasks.withType(Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+processTestResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// ===== 테스트 설정 =====
+
+test {
+    useJUnitPlatform()
+
+    // 테스트 결과 출력 설정
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = false
+    }
+
+    // 메모리 설정
+    maxHeapSize = "1G"
+
+    // 병렬 실행 (선택사항)
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+
+    // 테스트 프로파일 설정
+    systemProperty 'spring.profiles.active', 'test'
+
+    // JaCoCo 코드 커버리지
+    finalizedBy jacocoTestReport
+}
+
+// ===== 통합테스트 설정 =====
+
+// 통합테스트용 별도 task 생성
+task integrationTest(type: Test) {
+    description = 'Runs integration tests'
+    group = 'verification'
+
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    systemProperty 'spring.profiles.active', 'integration-test'
+
+    // TestContainers 설정
+    systemProperty 'testcontainers.reuse.enable', 'true'
+
+    mustRunAfter test
+}
+
+check.dependsOn integrationTest
+
+// ===== JaCoCo 코드 커버리지 설정 (Java 21 호환) =====
+
+jacoco {
+    toolVersion = "0.8.12"  // Java 21 호환 버전으로 업그레이드
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/config/**',           // 설정 클래스 제외
+                    '**/dto/**',              // DTO 제외
+                    '**/entity/**',           // Entity 제외 (단순 데이터 클래스)
+                    '**/*Application.class',  // Main 클래스 제외
+                    '**/domain/CustomUserDetails.class' // UserDetails 구현체 제외
+            ])
+        }))
     }
 }
 
-bootJar {
-    enabled = true
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.60 // 60% 이상 커버리지 목표
+            }
+        }
+    }
 }
 
-jar {
-    enabled = false
-}
+// ===== 테스트용 프로파일 설정 =====
 
-tasks.test {
-    useJUnitPlatform()
+sourceSets {
+    test {
+        resources {
+            srcDir 'src/test/resources'
+        }
+    }
 }

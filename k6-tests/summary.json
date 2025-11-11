@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-10-30T15:26:50.873Z",
+  "metrics": {
+    "queueEntries": 314,
+    "directEntries": 30,
+    "tokenIssues": 179,
+    "heartbeats": 183,
+    "avgResponseTime": 2549.9322515683793,
+    "p95ResponseTime": 0,
+    "successRate": 100,
+    "concurrencySuccessRate": 100,
+    "queueAccuracyRate": 100,
+    "redisAvgTime": 4339.952229299363,
+    "totalRequests": 1594
+  }
+}
