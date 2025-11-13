@@ -26,6 +26,9 @@ COPY module-metric module-metric
 COPY module-auth module-auth
 COPY module-api module-api
 COPY module-queue module-queue
+COPY module-api-admin module-api-admin
+COPY authorization-spring-boot-starter authorization-spring-boot-starter
+
 # (api 모듈은 queue 빌드에 직접 필요 없으면 생략 가능)
 
 # Queue 모듈만 빌드
@@ -45,11 +48,11 @@ RUN apt-get update && \
 COPY --from=builder /app/module-queue/build/libs/*.jar app.jar
 
 # 포트 노출
-EXPOSE 8083
+EXPOSE 8080
 
 # 헬스체크
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8083/actuator/health || exit 1
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # 실행
 ENTRYPOINT ["java", \
